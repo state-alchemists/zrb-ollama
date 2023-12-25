@@ -1,2 +1,2 @@
 echo "Publish"
-flit publish --repository {{input.zrb_ollama_repo}}
+flit publish --repository {{input.plugin_repo}}
