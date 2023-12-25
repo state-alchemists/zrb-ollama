@@ -29,6 +29,8 @@ class PromptTask(Task):
         cwd: str | pathlib.Path | None = None,
         preexec_fn: Callable[[], Any] | None = os.setsid,
         prompt_cmd: str | None = None,
+        temperature: float | int | str = 0.8,
+        system_prompt: str = '',
         group: Group | None = None,
         description: str = '',
         inputs: List[AnyInput] = [],
@@ -84,6 +86,8 @@ class PromptTask(Task):
         self._executable = executable
         self._preexec_fn = preexec_fn
         self.__set_cwd(cwd)
+        self._temperature = temperature
+        self._system_prompt = system_prompt
 
     def __set_cwd(self, cwd: str | pathlib.Path | None):
         if cwd is None:
@@ -94,10 +98,18 @@ class PromptTask(Task):
     async def run(self, *args: Any, **kwargs: Any) -> Any:
         model = self.render_str(self._model)
         base_url = self.render_str(self._ollama_base_url).rstrip('/')
+        temperature = self.render_float(self._temperature)
+        system_prompt = self.render_any(self._system_prompt)
         prompt = await self._get_prompt()
         context_key = '.'.join(['ollama_context', model])
         context_str = self.get_xcom(context_key)
-        payload = self._create_json_payload(model, prompt, context_str)
+        payload = self._create_json_payload(
+            model=model,
+            temperature=temperature,
+            system_prompt=system_prompt,
+            prompt=prompt,
+            context_str=context_str
+        )
         r = requests.post(
             '/'.join([base_url, 'api/generate']),
             json=payload,
@@ -122,9 +134,21 @@ class PromptTask(Task):
         return result
 
     def _create_json_payload(
-        self, model: str, prompt: str, context_str: str
+        self,
+        model: str,
+        temperature: float,
+        system_prompt: str,
+        prompt: str,
+        context_str: str
     ) -> Mapping[str, Any]:
-        payload = {'model': model, 'prompt': prompt}
+        payload = {
+            'model': model,
+            'prompt': prompt,
+            'system': system_prompt,
+            'options': {
+                'temperature': temperature
+            }
+        }
         if context_str == '':
             return payload
         payload['context'] = json.loads(context_str)
