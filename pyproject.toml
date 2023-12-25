@@ -1,0 +1,38 @@
+[build-system]
+requires = ["flit_core>=3.4"]
+build-backend = "flit_core.buildapi"
+
+[project]
+name = "zrb-ollama"
+version = "0.0.1"
+authors = [
+  { name="goFrendiAsgard", email="gofrendiasgard@gmail.com" },
+]
+description = "Tasks related to ollama"
+readme = "README.md"
+requires-python = ">=3.8"
+classifiers = [
+  "Programming Language :: Python :: 3",
+  "License :: OSI Approved :: GNU Affero General Public License v3 or later (AGPLv3+)",
+  "Operating System :: OS Independent",
+]
+dependencies = [
+  "zrb~=0.3.0"
+]
+ 
+
+[project.optional-dependencies]
+dev = []
+test = []
+
+[project.urls]
+"Homepage" = "https://github.com/gofrendi/zrb-ollama"
+"Bug Tracker" = "https://github.com/gofrendi/zrb-ollama/issues"
+
+[project.scripts]
+zrb-ollama = "zrb_ollama.__main__:hello"
+
+[tool.pytest.ini_options]
+pythonpath = [
+  "src"
+]
