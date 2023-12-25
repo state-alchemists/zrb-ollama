@@ -1,4 +1,5 @@
 from zrb import CmdTask, runner, StrInput
+from zrb.builtin.group import plugin_group
 
 import os
 
@@ -8,8 +9,9 @@ PROJECT_DIR = os.path.dirname(__file__)
 # ⚙️ prepare-plugin
 ###############################################################################
 
-prepare_plugin = CmdTask(
-    name='prepare-plugin',
+prepare = CmdTask(
+    name='prepare',
+    group=plugin_group,
     description='Prepare venv for plugin',
     cwd=PROJECT_DIR,
     cmd_path=[
@@ -17,30 +19,32 @@ prepare_plugin = CmdTask(
         os.path.join(PROJECT_DIR, '_cmd', 'prepare-venv.sh'),
     ]
 )
-runner.register(prepare_plugin)
+runner.register(prepare)
 
 ###############################################################################
 # ⚙️ build-plugin
 ###############################################################################
 
-build_plugin = CmdTask(
-    name='build-plugin',
+build = CmdTask(
+    name='build',
+    group=plugin_group,
     description='Build plugin',
-    upstreams=[prepare_plugin],
+    upstreams=[prepare],
     cwd=PROJECT_DIR,
     cmd_path=[
         os.path.join(PROJECT_DIR, '_cmd', 'activate-venv.sh'),
         os.path.join(PROJECT_DIR, '_cmd', 'build.sh'),
     ]
 )
-runner.register(build_plugin)
+runner.register(build)
 
 ###############################################################################
 # ⚙️ publish-plugin
 ###############################################################################
 
-publish_plugin = CmdTask(
-    name='publish-plugin',
+publish = CmdTask(
+    name='publish',
+    group=plugin_group,
     description='Publish plugin',
     inputs=[
         StrInput(
@@ -50,27 +54,59 @@ publish_plugin = CmdTask(
             default='pypi',
         )
     ],
-    upstreams=[build_plugin],
+    upstreams=[build],
     cwd=PROJECT_DIR,
     cmd_path=[
         os.path.join(PROJECT_DIR, '_cmd', 'activate-venv.sh'),
         os.path.join(PROJECT_DIR, '_cmd', 'publish.sh'),
     ]
 )
-runner.register(publish_plugin)
+runner.register(publish)
 
 ###############################################################################
-# ⚙️ install-kebab-zrb-task-name-symlink
+# ⚙️ install-symlink
 ###############################################################################
 
-install_plugin_symlink = CmdTask(
-    name='install-plugin-symlink',
+install_symlink = CmdTask(
+    name='install-symlink',
+    group=plugin_group,
     description='Install plugin as symlink',
-    upstreams=[build_plugin],
+    upstreams=[build],
     cwd=PROJECT_DIR,
     cmd_path=[
         os.path.join(PROJECT_DIR, '_cmd', 'activate-venv.sh'),
         os.path.join(PROJECT_DIR, '_cmd', 'install-symlink.sh'),
     ]
 )
-runner.register(install_plugin_symlink)
+runner.register(install_symlink)
+
+###############################################################################
+# ⚙️ prepare-playground
+###############################################################################
+
+prepare_playground = CmdTask(
+    name='prepare-playground',
+    group=plugin_group,
+    description='Prepare playground',
+    upstreams=[prepare],
+    cwd=PROJECT_DIR,
+    cmd_path=[
+        os.path.join(PROJECT_DIR, '_cmd', 'activate-venv.sh'),
+        os.path.join(PROJECT_DIR, '_cmd', 'prepare-playground.sh')
+    ]
+)
+runner.register(prepare_playground)
+
+###############################################################################
+# ⚙️ test-playground
+###############################################################################
+
+test_playground = CmdTask(
+    name='test-playground',
+    group=plugin_group,
+    description='Test playground',
+    upstreams=[prepare_playground],
+    cwd=os.path.join(PROJECT_DIR, 'playground'),
+    cmd_path=os.path.join(PROJECT_DIR, '_cmd', 'test-playground.sh'),
+)
+runner.register(test_playground)

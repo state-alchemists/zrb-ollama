@@ -17,7 +17,8 @@ classifiers = [
   "Operating System :: OS Independent",
 ]
 dependencies = [
-  "zrb~=0.3.0"
+  "zrb~=0.4.0",
+  "requests~=2.31.0",
 ]
  
 
@@ -30,7 +31,7 @@ test = []
 "Bug Tracker" = "https://github.com/gofrendi/zrb-ollama/issues"
 
 [project.scripts]
-zrb-ollama = "zrb_ollama.__main__:hello"
+zrb-ollama = "zrb_ollama.__main__:main"
 
 [tool.pytest.ini_options]
 pythonpath = [

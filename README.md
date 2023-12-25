@@ -5,7 +5,12 @@ zrb-ollama is a [pypi](https://pypi.org) package.
 You can install zrb-ollama by invoking the following command:
 
 ```bash
+# From pypi
 pip install zrb-ollama
+# From github
+pip install git+https://github.com/goFrendiAsgard/zrb-ollama.git@main
+# From directory
+pip install path/to/this/directory
 ```
 
 Once zrb-ollama is installed, you can then run it by invoking the following command:
