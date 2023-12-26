@@ -16,15 +16,32 @@ pip install path/to/this/directory
 Once zrb-ollama is installed, you can then run it by invoking the following command:
 
 ```bash
-zrb-ollama
+zrb-ollama "Why is the sky blue?"
 ```
 
-You can also import `zrb-ollama` into your Python program:
+You can also import `zrb-ollama` into your Zrb project and perform some fun things:
 
 ```python
-from zrb_ollama import hello
+from zrb import runner
+from zrb_ollama import PromptTask
 
-print(hello())
+chat = PromptTask(
+    name='chat',
+    model='mistral',
+    prompt='echo {{ " ".join(input._args) if input._args | length > 0 else "tell me some fun fact" }}',  # noqa
+    options={
+        'temperature': 0.8,
+        'num_gpu': 0
+    },
+    system_prompt='You are a code tutor. You eager to explain code in a very detail manner',  # noqa
+    context_file='.ctx.json'
+)
+runner.register(chat)
+```
+
+```
+zrb chat "Please explain the following Python script: $(cat fibo.py)"
+zrb chat "Can you make it better?"
 ```
 
 

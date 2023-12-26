@@ -4,7 +4,7 @@ build-backend = "flit_core.buildapi"
 
 [project]
 name = "zrb-ollama"
-version = "0.0.3"
+version = "0.0.4"
 authors = [
   { name="goFrendiAsgard", email="gofrendiasgard@gmail.com" },
 ]
@@ -27,8 +27,8 @@ dev = []
 test = []
 
 [project.urls]
-"Homepage" = "https://github.com/gofrendi/zrb-ollama"
-"Bug Tracker" = "https://github.com/gofrendi/zrb-ollama/issues"
+"Homepage" = "https://github.com/gofrendiAsgard/zrb-ollama"
+"Bug Tracker" = "https://github.com/gofrendiAsgard/zrb-ollama/issues"
 
 [project.scripts]
 zrb-ollama = "zrb_ollama.__main__:main"
