@@ -1,4 +1,5 @@
 from zrb import Task
+from zrb.helper.typecheck import typechecked
 from zrb.helper.typing import Any, Callable, Iterable, List, Mapping
 from zrb.task.any_task import AnyTask
 from zrb.task.any_task_event_handler import (
@@ -18,18 +19,25 @@ import sys
 import requests
 
 
+@typechecked
 class PromptTask(Task):
+    '''
+    PromptTask sends request to ollama's Generate API (/api/generate)
+    You can set options as described in ollama's modelfile parameter docs:
+    https://github.com/jmorganca/ollama/blob/main/docs/modelfile.md#valid-parameters-and-values
+    '''
     def __init__(
         self,
         name: str,
         model: str,
         prompt: str | None = None,
         ollama_base_url: str = 'http://localhost:11434',
+        context_file: str | None = None,
         executable: str | None = None,
         cwd: str | pathlib.Path | None = None,
         preexec_fn: Callable[[], Any] | None = os.setsid,
         prompt_cmd: str | None = None,
-        temperature: float | int | str = 0.8,
+        options: Mapping[str, Any] = {},
         system_prompt: str = '',
         group: Group | None = None,
         description: str = '',
@@ -86,8 +94,9 @@ class PromptTask(Task):
         self._executable = executable
         self._preexec_fn = preexec_fn
         self.__set_cwd(cwd)
-        self._temperature = temperature
+        self._options = options
         self._system_prompt = system_prompt
+        self._context_file = context_file
 
     def __set_cwd(self, cwd: str | pathlib.Path | None):
         if cwd is None:
@@ -98,14 +107,14 @@ class PromptTask(Task):
     async def run(self, *args: Any, **kwargs: Any) -> Any:
         model = self.render_str(self._model)
         base_url = self.render_str(self._ollama_base_url).rstrip('/')
-        temperature = self.render_float(self._temperature)
         system_prompt = self.render_any(self._system_prompt)
+        options = self._get_rendered_options()
         prompt = await self._get_prompt()
         context_key = '.'.join(['ollama_context', model])
-        context_str = self.get_xcom(context_key)
+        context_str = self._read_context_str(context_key)
         payload = self._create_json_payload(
             model=model,
-            temperature=temperature,
+            options=options,
             system_prompt=system_prompt,
             prompt=prompt,
             context_str=context_str
@@ -130,13 +139,38 @@ class PromptTask(Task):
                 print(file=sys.stderr, flush=True)
                 context = body['context']
                 context_str = json.dumps(context)
-                self.set_xcom(context_key, context_str)
+                self._write_context_str(context_key, context_str)
         return result
+
+    def _get_rendered_options(self) -> Mapping[str, Any]:
+        options = {}
+        for key, value in self._options.items():
+            options[key] = self.render_any(value)
+        return options
+
+    def _write_context_str(self, context_key: str, context_str: str):
+        self.set_xcom(context_key, context_str)
+        with open(self._context_file, 'w') as file:
+            file.write(context_str)
+
+    def _read_context_str(self, context_key: str) -> str:
+        context_str = self.get_xcom(context_key)
+        if context_str != '':
+            return context_str
+        if self._context_file is not None and self._context_file != '':
+            if not os.path.isfile(self._context_file):
+                return ''
+            try:
+                with open(self._context_file) as file:
+                    return file.read()
+            except Exception:
+                self.print_err(f'Cannot read file: {self._context_file}')
+        return ''
 
     def _create_json_payload(
         self,
         model: str,
-        temperature: float,
+        options: Mapping[str, Any],
         system_prompt: str,
         prompt: str,
         context_str: str
@@ -145,9 +179,7 @@ class PromptTask(Task):
             'model': model,
             'prompt': prompt,
             'system': system_prompt,
-            'options': {
-                'temperature': temperature
-            }
+            'options': options
         }
         if context_str == '':
             return payload

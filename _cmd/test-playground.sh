@@ -1,2 +1,4 @@
 source .venv/bin/activate
-zrb fun-fact
+zrb chat "Please explain the following Python script: $(cat fibo.py)"
+zrb chat "Can you make it better?"
+zrb chat
