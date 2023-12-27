@@ -114,6 +114,7 @@ class PromptTask(Task):
         prompt = await self._get_prompt()
         context_key = '.'.join(['ollama_context', model])
         context_str = self._read_context_str(context_key)
+        self.print_out_dark('Sending request...')
         payload = self._create_json_payload(
             model=model,
             options=options,
