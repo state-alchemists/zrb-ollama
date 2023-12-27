@@ -31,7 +31,8 @@ test = []
 "Bug Tracker" = "https://github.com/gofrendiAsgard/zrb-ollama/issues"
 
 [project.scripts]
-zrb-ollama = "zrb_ollama.__main__:main"
+zrb-ollama = "zrb_ollama.__main__:vanilla_prompt"
+zrb-ollama-py = "zrb_ollama.__main__:python_prompt"
 
 [tool.pytest.ini_options]
 pythonpath = [

@@ -1,6 +1,7 @@
 from zrb import Task
 from zrb.helper.typecheck import typechecked
 from zrb.helper.typing import Any, Callable, Iterable, List, Mapping
+from zrb.helper.accessories.color import colored
 from zrb.task.any_task import AnyTask
 from zrb.task.any_task_event_handler import (
     OnFailed, OnReady, OnRetry, OnSkipped, OnStarted, OnTriggered, OnWaiting
@@ -127,12 +128,14 @@ class PromptTask(Task):
         )
         r.raise_for_status()
         result: str = ''
-        self.print_out('Waiting for response...')
+        self.print_out_dark('Waiting for response...')
+        is_first_response = True
         for response in r.iter_lines():
             body = json.loads(response)
             response_part = body.get('response', '')
             if response_part != '':
-                print(response_part, file=sys.stderr, end='', flush=True)
+                self.__print_response(response_part, is_first_response)
+                is_first_response = False
                 result = ''.join([result, response_part])
             if 'error' in body:
                 raise Exception(body['error'])
@@ -142,6 +145,15 @@ class PromptTask(Task):
                 context_str = json.dumps(context)
                 self._write_context_str(context_key, context_str)
         return result
+
+    def __print_response(self, response_part: str, is_first_response: bool):
+        shown_response_part = '\n    '.join(response_part.split('\n'))
+        if is_first_response:
+            shown_response_part = ''.join(['   ', shown_response_part])
+        print(
+            colored(shown_response_part, attrs=['dark']),
+            file=sys.stderr, end='', flush=True
+        )
 
     def _get_rendered_options(self) -> Mapping[str, Any]:
         options = {}
