@@ -95,7 +95,7 @@ index-servers =
 To publish zrb-ollama, you can do the following command:
 
 ```bash
-zrb project publish-zrb-ollama
+zrb plugin publish
 ```
 
 ## Updating version
