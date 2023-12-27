@@ -6,4 +6,4 @@ deactivate 2>/dev/null
 
 python -m venv .venv
 source .venv/bin/activate
-pip install "$(pwd)/.."
+pip install --use-feature=in-tree-build "$(pwd)/.."

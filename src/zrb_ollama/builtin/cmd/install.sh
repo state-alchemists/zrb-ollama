@@ -1,5 +1,5 @@
 set +e
-ollama --version
+ollama --version > /dev/null
 SHOULD_INSTALL=$?
 set -e
 if [ "$SHOULD_INSTALL" != "0" ]

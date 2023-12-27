@@ -10,6 +10,7 @@ from zrb.task_env.env_file import EnvFile
 from zrb.task_group.group import Group
 from zrb.task_input.any_input import AnyInput
 from zrb.config.config import default_shell
+from ..config import DEFAULT_OLLAMA_BASE_URL, DEFAULT_MODEL
 
 import asyncio
 import os
@@ -29,9 +30,9 @@ class PromptTask(Task):
     def __init__(
         self,
         name: str,
-        model: str,
+        model: str = DEFAULT_MODEL,
         prompt: str | None = None,
-        ollama_base_url: str = 'http://localhost:11434',
+        ollama_base_url: str = DEFAULT_OLLAMA_BASE_URL,
         context_file: str | None = None,
         executable: str | None = None,
         cwd: str | pathlib.Path | None = None,

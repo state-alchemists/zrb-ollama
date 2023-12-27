@@ -1,6 +1,8 @@
-# Zrb ollama
+# Zrb Ollama
 
-zrb-ollama is a [pypi](https://pypi.org) package.
+zrb-ollama is a [pypi](https://pypi.org) package that acts as Ollama's wrapper, allowing you to incorporate LLM into your workflow.
+
+## Installation
 
 You can install zrb-ollama by invoking the following command:
 
@@ -10,14 +12,20 @@ pip install zrb-ollama
 # From github
 pip install git+https://github.com/goFrendiAsgard/zrb-ollama.git@main
 # From directory
-pip install path/to/this/directory
+pip install --use-feature=in-tree-build path/to/this/directory
 ```
 
-Once zrb-ollama is installed, you can then run it by invoking the following command:
+## Run Zrb Ollama
+
+Once you install zrb-ollama, you can then run it by invoking the following command:
 
 ```bash
 zrb-ollama "Why is the sky blue?"
 ```
+
+When you talk to zrb-ollama, it will save your context history in `~/.zrb-ollama-context.json`. Thus, you can continue the conversation and retain the context. For example, you can ask `zrb-ollama "Explain in more detail"`.
+
+## Creating a PromptTask
 
 You can also import `zrb-ollama` into your Zrb project and perform some fun things:
 
@@ -43,6 +51,13 @@ runner.register(chat)
 zrb chat "Please explain the following Python script: $(cat fibo.py)"
 zrb chat "Can you make it better?"
 ```
+
+# Configuration
+
+You can configure Zrb Ollama using a few environment variables:
+
+- `ZRB_OLLAMA_BASE_URL`: Default Ollama base URL. if not specified, Zrb Ollama will use `http://localhost:11434`.
+- `ZRB_OLLAMA_DEFAULT_MODEL`: Default Ollama model. If not specified, Zrb Ollama will use `mistral`.
 
 
 # For maintainers
