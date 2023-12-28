@@ -3,7 +3,7 @@ from zrb.helper.typing import Any, List
 from zrb.helper.accessories.color import colored
 from .builtin.install import install
 from .task.prompt_task import PromptTask
-from .config import DEFAULT_MODEL, DEFAULT_OLLAMA_BASE_URL
+from .config import DEFAULT_MODEL, DEFAULT_OLLAMA_BASE_URL, VERBOSE_EVAL
 
 import os
 import subprocess
@@ -19,7 +19,7 @@ _HOME_DIR = os.path.expanduser('~')
 def vanilla_prompt():
     prompt = _get_user_prompt()
     prompt_task = _create_prompt_task(prompt=prompt)
-    prompt_fn = prompt_task.to_function(show_done_info=False)
+    prompt_fn = prompt_task.to_function()
     prompt_fn()
 
 
@@ -86,7 +86,8 @@ def _create_eval_task(upstreams: List[Task], xcom_key: str) -> Task:
         task: Task = kwargs.get('_task')
         python_script = _extract_python_script(task.get_xcom(xcom_key))
         shown_lines = python_script.split('\n')
-        task.print_out_dark('\n    '.join(['Evaluating:', *shown_lines]))
+        if VERBOSE_EVAL:
+            task.print_out_dark('\n    '.join(['Evaluating:', *shown_lines]))
         process = subprocess.Popen(
             ['python', '-c', python_script],
             stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True
