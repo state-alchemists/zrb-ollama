@@ -15,6 +15,10 @@ pip install git+https://github.com/goFrendiAsgard/zrb-ollama.git@main
 pip install --use-feature=in-tree-build path/to/this/directory
 ```
 
+## Installing Ollama
+
+You can install Ollama by visiting the official website: [`https://ollama.ai/`](https://ollama.ai/).
+
 ## Talk to Zrb Ollama
 
 Once you install Zrb Ollama, you can then run it by invoking the following command:
@@ -172,9 +176,9 @@ zrb chat "Can you make it better?"
 
 You can configure Zrb Ollama using a few environment variables:
 
-- `ZRB_OLLAMA_BASE_URL`: Default Ollama base URL. if not specified, Zrb Ollama will use `http://localhost:11434`.
+- `ZRB_OLLAMA_BASE_URL`: Default Ollama base URL. If not specified, Zrb Ollama will use `http://localhost:11434`.
 - `ZRB_OLLAMA_DEFAULT_MODEL`: Default Ollama model. If not specified, Zrb Ollama will use `mistral`.
-- `ZRB_OLLAMA_VERBOSE_EVAL`: Whether `zrb-ollama-py` show the evaluate source code or not. If not specified, Zrb Ollama will set this to `0`
+- `ZRB_OLLAMA_VERBOSE_EVAL`: Whether `zrb-ollama-py` shows the evaluated source code or not. If not specified, Zrb Ollama will set this to `0`
 
 
 # For maintainers
