@@ -112,6 +112,8 @@ class PromptTask(Task):
         system_prompt = self.render_any(self._system_prompt)
         options = self._get_rendered_options()
         prompt = await self._get_prompt()
+        if self._context_file is not None and self._context_file != '':
+            self.print_out_dark(f'Context file: {self._context_file}')
         context_key = '.'.join(['ollama_context', model])
         context_str = self._read_context_str(context_key)
         self.print_out_dark('Sending request...')
@@ -122,12 +124,13 @@ class PromptTask(Task):
             prompt=prompt,
             context_str=context_str
         )
-        r = requests.post(
-            '/'.join([base_url, 'api/generate']),
-            json=payload,
-            stream=True
-        )
-        r.raise_for_status()
+        try:
+            r = requests.post(
+                '/'.join([base_url, 'api/generate']), json=payload, stream=True
+            )
+            r.raise_for_status()
+        except KeyboardInterrupt:
+            return ''
         result: str = ''
         self.print_out_dark('Waiting for response...')
         is_first_response = True
@@ -145,6 +148,7 @@ class PromptTask(Task):
                 context = body['context']
                 context_str = json.dumps(context)
                 self._write_context_str(context_key, context_str)
+        self.print_out_dark('Response completed')
         return result
 
     def __print_response(self, response_part: str, is_first_response: bool):

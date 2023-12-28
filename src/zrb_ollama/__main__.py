@@ -1,5 +1,6 @@
 from zrb import Task, python_task
 from zrb.helper.typing import Any, List
+from zrb.helper.accessories.color import colored
 from .builtin.install import install
 from .task.prompt_task import PromptTask
 from .config import DEFAULT_MODEL, DEFAULT_OLLAMA_BASE_URL
@@ -16,13 +17,16 @@ _HOME_DIR = os.path.expanduser('~')
 
 
 def vanilla_prompt():
-    prompt_task = _create_prompt_task()
-    prompt_fn = prompt_task.to_function()
+    prompt = _get_user_prompt()
+    prompt_task = _create_prompt_task(prompt=prompt)
+    prompt_fn = prompt_task.to_function(show_done_info=False)
     prompt_fn()
 
 
 def python_prompt():
+    prompt = _get_user_prompt()
     prompt_task = _create_prompt_task(
+        prompt=prompt,
         system_prompt='\n'.join([
             "You are a Python code generator.",
             "Your task is to interpret the user's input as a Python coding task and generate a Python code that fulfills the request.",  # noqa
@@ -31,22 +35,63 @@ def python_prompt():
             "Always ensure that the code is safe to run and adheres to Python best practices.",  # noqa
             "Make sure you only produce Python code, no explanation is needed. Just Python.",  # noqa
         ]),
-        context_suffix='py'
     )
+    eval_task = _create_eval_task(
+        upstreams=[prompt_task],
+        xcom_key='prompt'
+    )
+    eval_fn = eval_task.to_function()
+    eval_fn()
 
+
+def _create_prompt_task(
+    prompt: str = '',
+    system_prompt: str = '',
+    context_file: str = ''
+) -> Task:
+    if context_file == '':
+        context_file = os.path.join(
+            _HOME_DIR, '.zrb-ollama-context.json'
+        )
+    prompt_task = PromptTask(
+        name='prompt',
+        icon='🦙',
+        color='light_green',
+        ollama_base_url=DEFAULT_OLLAMA_BASE_URL,
+        model=DEFAULT_MODEL,
+        system_prompt=system_prompt,
+        prompt=prompt,
+        context_file=context_file
+    )
+    if DEFAULT_OLLAMA_BASE_URL.rstrip('/') in _LOCAL_OLLAMA_BASE_URLS:
+        prompt_task.add_upstream(install)
+    return prompt_task
+
+
+def _get_user_prompt():
+    if len(sys.argv) > 1:
+        return ' '.join(sys.argv[1:])
+    return 'Tell me some random fun facts'
+
+
+def _create_eval_task(upstreams: List[Task], xcom_key: str) -> Task:
     @python_task(
-        name='eval',
-        upstreams=[prompt_task]
+        name='evaluate',
+        icon='✏️',
+        color='green',
+        upstreams=upstreams,
+        retry=0
     )
     def evaluate(*args, **kwargs):
         task: Task = kwargs.get('_task')
-        python_script = _extract_python_script(task.get_xcom('prompt'))
+        python_script = _extract_python_script(task.get_xcom(xcom_key))
         shown_lines = python_script.split('\n')
         task.print_out_dark('\n    '.join(['Evaluating:', *shown_lines]))
         process = subprocess.Popen(
             ['python', '-c', python_script],
             stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True
         )
+        task.print_out_dark('Waiting for evaluation...')
         stdout_lines, stderr_lines = [], []
         stdout_thread = threading.Thread(
             target=_print_stream, args=(process.stdout, stdout_lines)
@@ -62,9 +107,7 @@ def python_prompt():
         if process.returncode != 0:
             raise Exception(f'Non zero exit code: {process.returncode}')
         return ''.join(stdout_lines)
-
-    evaluate_fn = evaluate.to_function()
-    evaluate_fn()
+    return evaluate
 
 
 def _extract_python_script(response: str) -> str:
@@ -90,36 +133,7 @@ def _print_stream(stream: Any, lines: List[str]):
         line = stream.readline()
         if not line:
             break
-        print(line, end='', file=sys.stderr, flush=True)
+        print(
+            colored(line, attrs=['dark']), end='', file=sys.stderr, flush=True
+        )
         lines.append(line)
-
-
-def _create_prompt_task(
-    system_prompt: str = '',
-    context_suffix: str = ''
-) -> Task:
-    context_file_name = '.zrb-ollama-context'
-    if context_suffix != '':
-        context_file_name = '-'.join([
-            context_file_name, context_suffix
-        ])
-    context_file_name = '.'.join([context_file_name, 'json'])
-    prompt_task = PromptTask(
-        name='prompt',
-        icon='🦙',
-        color='green',
-        ollama_base_url=DEFAULT_OLLAMA_BASE_URL,
-        model=DEFAULT_MODEL,
-        system_prompt=system_prompt,
-        prompt=_get_user_prompt(),
-        context_file=os.path.join(_HOME_DIR, context_file_name)
-    )
-    if DEFAULT_OLLAMA_BASE_URL.rstrip('/') in _LOCAL_OLLAMA_BASE_URLS:
-        prompt_task.add_upstream(install)
-    return prompt_task
-
-
-def _get_user_prompt():
-    if len(sys.argv) > 1:
-        return ' '.join(sys.argv[1:])
-    return 'Tell me some random fun facts'
