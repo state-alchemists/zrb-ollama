@@ -8,9 +8,9 @@ from zrb.task_env.env import Env
 from zrb.task_env.env_file import EnvFile
 from zrb.task_group.group import Group
 from zrb.task_input.any_input import AnyInput
-from ..config import DEFAULT_OLLAMA_BASE_URL, DEFAULT_MODEL
 from langchain_core.language_models.chat_models import BaseChatModel
-from langchain.chat_models import ChatOllama
+from langchain.chat_models import ChatOllama, ChatOpenAI
+from ..config import DEFAULT_OLLAMA_BASE_URL, DEFAULT_MODEL
 from .langchain_task import LLMTask
 
 
@@ -26,6 +26,7 @@ class PromptTask(LLMTask):
         name: str,
         prompt: str,
         history_file: str | None = None,
+        openai_api_key: str | None = None,
         ollama_base_url: str = DEFAULT_OLLAMA_BASE_URL,
         ollama_model: str = DEFAULT_MODEL,
         ollama_mirostat: int | str | None = None,
@@ -93,6 +94,7 @@ class PromptTask(LLMTask):
             should_execute=should_execute,
             return_upstream_result=return_upstream_result
         )
+        self._openai_api_key = openai_api_key
         self._ollama_base_url = ollama_base_url,
         self._ollama_model = ollama_model
         self._ollama_mirostat = ollama_mirostat
@@ -114,6 +116,11 @@ class PromptTask(LLMTask):
         self._ollama_timeout = ollama_timeout
 
     def create_chat_model(self) -> BaseChatModel:
+        if self._openai_api_key is not None:
+            return ChatOpenAI(
+                api_key=self.render_str(self._openai_api_key),
+                callback_manager=self.get_callback_manager(),
+            )
         return ChatOllama(
             model=self.render_str(self._ollama_model),
             mirostat=self.render_any(self._ollama_mirostat),

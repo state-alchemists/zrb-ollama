@@ -11,7 +11,6 @@ from zrb.task_env.env import Env
 from zrb.task_env.env_file import EnvFile
 from zrb.task_group.group import Group
 from zrb.task_input.any_input import AnyInput
-from ..config import DEFAULT_MODEL, DEFAULT_OLLAMA_BASE_URL
 from langchain_core.language_models.chat_models import BaseChatModel
 from langchain.chat_models import ChatOllama
 from langchain.memory.chat_memory import BaseChatMemory
@@ -24,6 +23,7 @@ from langchain.callbacks.manager import CallbackManager
 from langchain.callbacks.streaming_stdout import (
     StreamingStdOutCallbackHandler
 )
+from ..config import DEFAULT_MODEL, DEFAULT_OLLAMA_BASE_URL
 
 import os
 import json
