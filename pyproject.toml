@@ -18,7 +18,9 @@ classifiers = [
 ]
 dependencies = [
   "zrb>=0.4.0",
-  "requests~=2.31.0",
+  "langchain~=0.0.353",
+  "langchain-community~=0.0.7",
+  "langchain-core~=0.1.4",
 ]
  
 

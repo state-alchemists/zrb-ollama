@@ -47,21 +47,21 @@ def python_prompt():
 def _create_prompt_task(
     prompt: str = '',
     system_prompt: str = '',
-    context_file: str = ''
+    history_file: str = ''
 ) -> Task:
-    if context_file == '':
-        context_file = os.path.join(
+    if history_file == '':
+        history_file = os.path.join(
             _HOME_DIR, '.zrb-ollama-context.json'
         )
     prompt_task = PromptTask(
         name='prompt',
         icon='🦙',
         color='light_green',
-        ollama_base_url=DEFAULT_OLLAMA_BASE_URL,
-        model=DEFAULT_MODEL,
-        system_prompt=system_prompt,
         prompt=prompt,
-        context_file=context_file
+        ollama_base_url=DEFAULT_OLLAMA_BASE_URL,
+        ollama_model=DEFAULT_MODEL,
+        ollama_system=system_prompt,
+        history_file=history_file
     )
     if DEFAULT_OLLAMA_BASE_URL.rstrip('/') in _LOCAL_OLLAMA_BASE_URLS:
         prompt_task.add_upstream(install)
