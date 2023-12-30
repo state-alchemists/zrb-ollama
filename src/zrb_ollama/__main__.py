@@ -113,12 +113,12 @@ def _create_eval_task(upstreams: List[Task], xcom_key: str) -> Task:
 
 def _extract_python_script(response: str) -> str:
     response = response.lstrip().rstrip()
-    if '```python' in response:
+    if '```' in response:
         lines = response.split('\n')
         is_code = False
         codes = []
         for line in lines:
-            if line == '```python':
+            if line == '```python' or line == '```':
                 is_code = True
                 continue
             if is_code and line == '```':

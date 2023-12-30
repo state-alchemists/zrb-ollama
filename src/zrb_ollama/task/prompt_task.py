@@ -9,11 +9,9 @@ from zrb.task_env.env_file import EnvFile
 from zrb.task_group.group import Group
 from zrb.task_input.any_input import AnyInput
 from ..config import DEFAULT_OLLAMA_BASE_URL, DEFAULT_MODEL
+from langchain_core.language_models.chat_models import BaseChatModel
+from langchain.chat_models import ChatOllama
 from .langchain_task import LLMTask
-from langchain_core.messages import BaseMessage
-from langchain.llms import Ollama
-from langchain_core.runnables import Runnable
-from langchain_core.language_models import LanguageModelInput
 
 
 @typechecked
@@ -115,10 +113,8 @@ class PromptTask(LLMTask):
         self._ollama_format = ollama_format
         self._ollama_timeout = ollama_timeout
 
-    def get_llm(
-        self
-    ) -> Runnable[LanguageModelInput, str] | Runnable[LanguageModelInput, BaseMessage]:  # noqa
-        return Ollama(
+    def create_chat_model(self) -> BaseChatModel:
+        return ChatOllama(
             model=self.render_str(self._ollama_model),
             mirostat=self.render_any(self._ollama_mirostat),
             mirostat_eta=self.render_any(self._ollama_mirostat_eta),
@@ -137,5 +133,5 @@ class PromptTask(LLMTask):
             template=self.render_any(self._ollama_template),
             format=self.render_any(self._ollama_format),
             timeout=self.render_any(self._ollama_timeout),
-            callback_manager=self.get_llm_callback_manager(),
+            callback_manager=self.get_callback_manager(),
         )

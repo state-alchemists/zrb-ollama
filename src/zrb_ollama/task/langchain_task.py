@@ -1,6 +1,7 @@
+from functools import lru_cache
 from zrb import Task
 from zrb.helper.typecheck import typechecked
-from zrb.helper.typing import Any, Callable, Iterable, List
+from zrb.helper.typing import Any, Callable, Iterable, List, Mapping
 from zrb.helper.accessories.color import colored
 from zrb.task.any_task import AnyTask
 from zrb.task.any_task_event_handler import (
@@ -10,28 +11,26 @@ from zrb.task_env.env import Env
 from zrb.task_env.env_file import EnvFile
 from zrb.task_group.group import Group
 from zrb.task_input.any_input import AnyInput
-from ..config import DEFAULT_MODEL
-from langchain_core.messages import BaseMessage
-from langchain.llms import Ollama
+from ..config import DEFAULT_MODEL, DEFAULT_OLLAMA_BASE_URL
+from langchain_core.language_models.chat_models import BaseChatModel
+from langchain.chat_models import ChatOllama
+from langchain.memory.chat_memory import BaseChatMemory
+from langchain.memory import ConversationBufferMemory
 from langchain.chains import LLMChain
+from langchain.prompts import (
+    ChatPromptTemplate, HumanMessagePromptTemplate, MessagesPlaceholder
+)
 from langchain.callbacks.manager import CallbackManager
 from langchain.callbacks.streaming_stdout import (
     StreamingStdOutCallbackHandler
 )
-from langchain.prompts import PromptTemplate
-from langchain.memory import FileChatMessageHistory, ConversationBufferMemory
-from langchain_core.chat_history import BaseChatMessageHistory
-from langchain_core.runnables import Runnable
-from langchain_core.language_models import LanguageModelInput
-
 
 import os
+import json
 import sys
 
-LLM = Runnable[LanguageModelInput, str] | Runnable[LanguageModelInput, BaseMessage]  # noqa
 
-
-class LLMCallbackHandler(StreamingStdOutCallbackHandler):
+class ZrbStderrCallbackHandler(StreamingStdOutCallbackHandler):
 
     def __init__(self) -> None:
         super().__init__()
@@ -103,88 +102,106 @@ class LLMTask(Task):
             return_upstream_result=return_upstream_result
         )
         self._user_prompt = prompt
-        self._history_file = history_file
-        self._llm_chain: LLMChain | None = None
-        self._is_llm_chain_created: bool = False
-        self._llm_prompt_template: PromptTemplate | None = None
-        self._is_llm_prompt_template_created: bool = False
-        self._llm_callback_manager: CallbackManager | None = None
-        self._is_llm_callback_manager_created: bool = False
-        self._llm_conversation_buffer_memory: ConversationBufferMemory | None = None  # noqa
-        self._is_llm_conversation_buffer_memory_created: bool = False
-        self._llm: LLM | None = None
-        self._is_llm_created = None
-        self._parsed_user_prompt: str | None = None
+        self._history_file_name = history_file
 
     async def run(self, *args: Any, **kwargs: Any) -> Any:
         chain = self.get_llm_chain()
-        result = chain.run(self.get_user_prompt())
-        print(chain.memory.json())
-        return result
+        user_prompt = self.get_rendered_user_prompt()
+        llm_response = chain.run(user_prompt)
+        self.save_chat_context(input=user_prompt, output=llm_response)
+        return llm_response
+
+    @lru_cache(maxsize=1)
+    def get_llm_chain(self) -> LLMChain:
+        return self.create_llm_chain()
 
     def create_llm_chain(self) -> LLMChain:
         return LLMChain(
-            llm=self.get_llm(),
-            prompt=self.get_llm_prompt_template(),
-            memory=self.get_llm_conversation_buffer_memory(),
+            llm=self.get_chat_model(),
+            prompt=self.get_chat_prompt_template(),
+            memory=self.get_chat_memory(),
             verbose=False
         )
 
-    def get_llm_chain(self) -> LLMChain:
-        if not self._is_llm_chain_created:
-            self._llm_chain = self.create_llm_chain()
-            self._is_llm_chain_created = True
-        return self._llm_chain
+    @lru_cache(maxsize=1)
+    def get_callback_manager(self) -> CallbackManager:
+        return self.create_callback_manager()
 
-    def create_llm(self) -> LLM:
-        return Ollama(
+    def create_callback_manager(self) -> CallbackManager:
+        return CallbackManager([ZrbStderrCallbackHandler()])
+
+    @lru_cache(maxsize=1)
+    def get_chat_model(self) -> BaseChatModel:
+        return self.create_chat_model()
+
+    def create_chat_model(self) -> BaseChatModel:
+        return ChatOllama(
             model=DEFAULT_MODEL,
-            callback_manager=self.get_llm_callback_manager(),
+            base_url=DEFAULT_OLLAMA_BASE_URL,
+            callback_manager=self.get_callback_manager(),
         )
 
-    def get_llm(self) -> LLM:
-        if not self._is_llm_created:
-            self._llm = self.create_llm()
-            self._is_llm_created = True
-        return self._llm
+    @lru_cache(maxsize=1)
+    def get_chat_prompt_template(self) -> ChatPromptTemplate:
+        return self.create_chat_prompt_template()
 
-    def create_llm_callback_manager(self) -> CallbackManager:
-        return CallbackManager([LLMCallbackHandler()])
-
-    def get_llm_callback_manager(self) -> CallbackManager:
-        if not self._is_llm_callback_manager_created:
-            self._llm_callback_manager = self.create_llm_callback_manager()
-            self._is_llm_callback_manager_created = True
-        return self._llm_callback_manager
-
-    def create_llm_prompt_template(self) -> PromptTemplate:
-        return PromptTemplate(
-            input_variables=["chat_history", "human_input"],
-            template='\n'.join([
-                'You are a chatbot having a conversation with a human.',
-                '',
-                '{chat_history}',
-                'Human: {human_input}',
-                'Chatbot:',
-            ])
+    def create_chat_prompt_template(self) -> ChatPromptTemplate:
+        return ChatPromptTemplate(
+            messages=[
+                # The `variable_name` here is what must align with memory
+                MessagesPlaceholder(variable_name="chat_history"),
+                HumanMessagePromptTemplate.from_template("{question}"),
+            ]
         )
 
-    def get_llm_prompt_template(self) -> PromptTemplate:
-        if not self._is_llm_prompt_template_created:
-            self._llm_prompt_template = self.create_llm_prompt_template()
-            self._is_llm_prompt_template_created = True
-        return self._llm_prompt_template
+    @lru_cache(maxsize=1)
+    def get_chat_memory(self) -> BaseChatMemory:
+        return self.create_chat_memory()
 
-    def create_llm_conversation_buffer_memory(
-        self
-    ) -> ConversationBufferMemory | None:
-        return ConversationBufferMemory(memory_key="chat_history")
+    def create_chat_memory(self) -> BaseChatMemory:
+        memory = ConversationBufferMemory(
+            memory_key="chat_history", return_messages=True
+        )
+        conversations = self.get_chat_context()
+        if conversations is None:
+            return memory
+        for conversation in conversations:
+            chat_input = conversation.get('input')
+            chat_output = conversation.get('output')
+            memory.save_context(
+                {'input': chat_input}, {'output': chat_output}
+            )
+        return memory
 
-    def get_llm_conversation_buffer_memory(self) -> ConversationBufferMemory:
-        if not self._is_llm_conversation_buffer_memory_created:
-            self._llm_conversation_buffer_memory = self.create_llm_conversation_buffer_memory()  # noqa
-            self._is_llm_conversation_buffer_memory_created = True
-        return self._llm_conversation_buffer_memory
+    @lru_cache(maxsize=1)
+    def save_chat_context(self, input: Any, output: Any):
+        history_file_name = self.get_rendered_history_file_name()
+        if history_file_name is None:
+            return
+        conversations = self.get_chat_context()
+        if conversations is None:
+            conversations: List[Mapping[str, Mapping[str, Any]]] = []
+        conversations.append({
+            'input': input,
+            'output': output
+        })
+        with open(history_file_name, 'w') as file:
+            file.write(json.dumps(conversations))
 
-    def get_user_prompt(self) -> str:
+    @lru_cache(maxsize=1)
+    def get_chat_context(self) -> List[Mapping[str, Mapping[str, Any]]] | None:
+        history_file_name = self.get_rendered_history_file_name()
+        if history_file_name is None or not os.path.isfile(history_file_name):
+            return None
+        with open(history_file_name, 'r') as file:
+            return json.loads(file.read())
+
+    @lru_cache(maxsize=1)
+    def get_rendered_history_file_name(self) -> str | None:
+        if self._history_file_name is None:
+            return None
+        return os.path.expanduser(self.render_str(self._history_file_name))
+
+    @lru_cache(maxsize=1)
+    def get_rendered_user_prompt(self) -> Any:
         return self.render_str(self._user_prompt)
