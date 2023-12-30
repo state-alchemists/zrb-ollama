@@ -4,4 +4,6 @@ twine==4.0.2        # pip package uploader
 keyring==24.2.0     # authenticator (used by twine)
 
 # For auto-completion only:
-requests==2.31.0
+langchain==0.0.353
+langchain-community==0.0.7
+langchain-core==0.1.4

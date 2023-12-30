@@ -4,7 +4,7 @@ build-backend = "flit_core.buildapi"
 
 [project]
 name = "zrb-ollama"
-version = "0.0.10"
+version = "0.0.11"
 authors = [
   { name="goFrendiAsgard", email="gofrendiasgard@gmail.com" },
 ]
@@ -18,7 +18,9 @@ classifiers = [
 ]
 dependencies = [
   "zrb>=0.4.0",
-  "requests~=2.31.0",
+  "langchain~=0.0.353",
+  "langchain-community~=0.0.7",
+  "langchain-core~=0.1.4",
 ]
  
 

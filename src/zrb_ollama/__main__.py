@@ -47,21 +47,21 @@ def python_prompt():
 def _create_prompt_task(
     prompt: str = '',
     system_prompt: str = '',
-    context_file: str = ''
+    history_file: str = ''
 ) -> Task:
-    if context_file == '':
-        context_file = os.path.join(
+    if history_file == '':
+        history_file = os.path.join(
             _HOME_DIR, '.zrb-ollama-context.json'
         )
     prompt_task = PromptTask(
         name='prompt',
         icon='🦙',
         color='light_green',
-        ollama_base_url=DEFAULT_OLLAMA_BASE_URL,
-        model=DEFAULT_MODEL,
-        system_prompt=system_prompt,
         prompt=prompt,
-        context_file=context_file
+        ollama_base_url=DEFAULT_OLLAMA_BASE_URL,
+        ollama_model=DEFAULT_MODEL,
+        ollama_system=system_prompt,
+        history_file=history_file
     )
     if DEFAULT_OLLAMA_BASE_URL.rstrip('/') in _LOCAL_OLLAMA_BASE_URLS:
         prompt_task.add_upstream(install)
@@ -113,12 +113,12 @@ def _create_eval_task(upstreams: List[Task], xcom_key: str) -> Task:
 
 def _extract_python_script(response: str) -> str:
     response = response.lstrip().rstrip()
-    if '```python' in response:
+    if '```' in response:
         lines = response.split('\n')
         is_code = False
         codes = []
         for line in lines:
-            if line == '```python':
+            if line == '```python' or line == '```':
                 is_code = True
                 continue
             if is_code and line == '```':
