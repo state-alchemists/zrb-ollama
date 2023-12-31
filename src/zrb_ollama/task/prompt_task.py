@@ -1,51 +1,44 @@
+from functools import lru_cache
+from langchain.callbacks.manager import CallbackManager
+from langchain.chains import LLMChain
+from langchain.memory.chat_memory import BaseChatMemory
+from langchain.prompts import ChatPromptTemplate
+from langchain_core.language_models.chat_models import BaseChatModel
 from zrb.helper.typecheck import typechecked
-from zrb.helper.typing import Callable, Iterable, List
-from zrb.task.any_task import AnyTask
-from zrb.task.any_task_event_handler import (
+from zrb.helper.typing import Any, Callable, Iterable, List, Mapping
+from zrb import (
+    AnyTask, Task, Env, EnvFile, Group, AnyInput,
     OnFailed, OnReady, OnRetry, OnSkipped, OnStarted, OnTriggered, OnWaiting
 )
-from zrb.task_env.env import Env
-from zrb.task_env.env_file import EnvFile
-from zrb.task_group.group import Group
-from zrb.task_input.any_input import AnyInput
-from langchain_core.language_models.chat_models import BaseChatModel
-from langchain.chat_models import ChatOllama, ChatOpenAI
-from ..config import DEFAULT_OLLAMA_BASE_URL, DEFAULT_MODEL
-from .langchain_task import LLMTask
+from ..factory.schema import (
+    LLMChainFactory, CallbackManagerFactory, ChatModelFactory,
+    ChatPromptTemplateFactory, ChatMemoryFactory
+)
+from ..factory.callback_manager import callback_manager_factory as make_callback_manager_factory  # noqa
+from ..factory.chat_memory import chat_conversation_buffer_memory_factory as make_chat_memory_factory  # noqa
+from ..factory.chat_model import ollama_chat_model_factory as make_chat_model_factory  # noqa
+from ..factory.chat_prompt_template import chat_prompt_template_factory as make_chat_prompt_template_factory  # noqa
+from ..factory.llm_chain import llm_chain_factory as make_llm_chain_factory
+from .any_prompt_task import AnyPromptTask
+
+import json
+import os
+import sys
 
 
 @typechecked
-class PromptTask(LLMTask):
-    '''
-    PromptTask sends request to ollama's Generate API (/api/generate)
-    You can set options as described in ollama's modelfile parameter docs:
-    https://github.com/jmorganca/ollama/blob/main/docs/modelfile.md#valid-parameters-and-values
-    '''
+class PromptTask(AnyPromptTask, Task):
     def __init__(
         self,
         name: str,
         prompt: str,
+        system_prompt: str = '',
         history_file: str | None = None,
-        openai_api_key: str | None = None,
-        ollama_base_url: str = DEFAULT_OLLAMA_BASE_URL,
-        ollama_model: str = DEFAULT_MODEL,
-        ollama_mirostat: int | str | None = None,
-        ollama_mirostat_eta: float | str | None = None,
-        ollama_mirostat_tau: float | str | None = None,
-        ollama_num_ctx: int | str | None = None,
-        ollama_num_gpu: int | str | None = None,
-        ollama_num_thread: int | str | None = None,
-        ollama_repeat_last_n: int | str | None = None,
-        ollama_repeat_penalty: float | str | None = None,
-        ollama_temperature: float | str | None = None,
-        ollama_stop: List[str] | None = None,
-        ollama_tfs_z: float | str | None = None,
-        ollama_top_k: int | str | None = None,
-        ollama_top_p: int | str | None = None,
-        ollama_system: str | str | None = None,
-        ollama_template: str | str | None = None,
-        ollama_format: str | str | None = None,
-        ollama_timeout: int | str | None = None,
+        llm_chain_factory: LLMChainFactory | None = None,
+        callback_manager_factory: CallbackManagerFactory | None = None,
+        chat_model_factory: ChatModelFactory | None = None,
+        chat_prompt_template_factory: ChatPromptTemplateFactory | None = None,
+        chat_memory_factory: ChatMemoryFactory | None = None,
         group: Group | None = None,
         description: str = '',
         inputs: List[AnyInput] = [],
@@ -70,8 +63,6 @@ class PromptTask(LLMTask):
     ):
         super().__init__(
             name=name,
-            prompt=prompt,
-            history_file=history_file,
             group=group,
             description=description,
             inputs=inputs,
@@ -94,51 +85,107 @@ class PromptTask(LLMTask):
             should_execute=should_execute,
             return_upstream_result=return_upstream_result
         )
-        self._openai_api_key = openai_api_key
-        self._ollama_base_url = ollama_base_url,
-        self._ollama_model = ollama_model
-        self._ollama_mirostat = ollama_mirostat
-        self._ollama_mirostat_eta = ollama_mirostat_eta
-        self._ollama_mirostat_tau = ollama_mirostat_tau
-        self._ollama_num_ctx = ollama_num_ctx
-        self._ollama_num_gpu = ollama_num_gpu
-        self._ollama_num_thread = ollama_num_thread
-        self._ollama_repeat_last_n = ollama_repeat_last_n
-        self._ollama_repeat_penalty = ollama_repeat_penalty
-        self._ollama_temperature = ollama_temperature
-        self._ollama_stop = ollama_stop
-        self._ollama_tfs_z = ollama_tfs_z
-        self._ollama_top_k = ollama_top_k
-        self._ollama_top_p = ollama_top_p
-        self._ollama_system = ollama_system
-        self._ollama_template = ollama_template
-        self._ollama_format = ollama_format
-        self._ollama_timeout = ollama_timeout
+        self._user_prompt = prompt
+        self._system_prompt = system_prompt
+        self._history_file_name = history_file
+        self._llm_chain_factory = llm_chain_factory
+        self._create_callback_manager = callback_manager_factory
+        self._create_chat_model = chat_model_factory
+        self._create_chat_prompt_template = chat_prompt_template_factory
+        self._create_chat_memory = chat_memory_factory
 
-    def create_chat_model(self) -> BaseChatModel:
-        if self._openai_api_key is not None:
-            return ChatOpenAI(
-                api_key=self.render_str(self._openai_api_key),
-                callback_manager=self.get_callback_manager(),
+    async def run(self, *args: Any, **kwargs: Any) -> Any:
+        chain = self.get_llm_chain()
+        user_prompt = self.get_rendered_user_prompt()
+        llm_response = chain.run(user_prompt)
+        self.save_chat_context(input=user_prompt, output=llm_response)
+        print('', file=sys.stderr, flush=True)
+        return llm_response
+
+    @lru_cache(maxsize=1)
+    def get_callback_manager(self) -> CallbackManager:
+        if self._create_callback_manager is not None:
+            return self._create_callback_manager(self)
+        create_callback_manager = make_callback_manager_factory()
+        return create_callback_manager(self)
+
+    @lru_cache(maxsize=1)
+    def get_chat_memory(self) -> BaseChatMemory:
+        if self._create_chat_memory is not None:
+            chat_memory = self._create_chat_memory(self)
+            return self.load_chat_context_to_memory(chat_memory)
+        create_chat_memory = make_chat_memory_factory()
+        chat_memory = create_chat_memory(self)
+        return self.load_chat_context_to_memory(chat_memory)
+
+    @lru_cache(maxsize=1)
+    def get_chat_model(self) -> BaseChatModel:
+        if self._create_chat_model is not None:
+            return self._create_chat_model(self)
+        create_chat_model = make_chat_model_factory()
+        return create_chat_model(self)
+
+    @lru_cache(maxsize=1)
+    def get_chat_prompt_template(self) -> ChatPromptTemplate:
+        if self._create_chat_prompt_template is not None:
+            return self._create_chat_prompt_template(self)
+        create_chat_prompt_template = make_chat_prompt_template_factory()
+        return create_chat_prompt_template(self)
+
+    @lru_cache(maxsize=1)
+    def get_llm_chain(self) -> LLMChain:
+        if self._llm_chain_factory is not None:
+            return self._llm_chain_factory(self)
+        create_llm_chain = make_llm_chain_factory(verbose=False)
+        return create_llm_chain(self)
+
+    def load_chat_context_to_memory(
+        self, memory: BaseChatMemory
+    ) -> BaseChatMemory:
+        conversations = self.get_chat_context()
+        if conversations is None:
+            return memory
+        for conversation in conversations:
+            chat_input = conversation.get('input')
+            chat_output = conversation.get('output')
+            memory.save_context(
+                {'input': chat_input}, {'output': chat_output}
             )
-        return ChatOllama(
-            model=self.render_str(self._ollama_model),
-            mirostat=self.render_any(self._ollama_mirostat),
-            mirostat_eta=self.render_any(self._ollama_mirostat_eta),
-            mirostat_tau=self.render_any(self._ollama_mirostat_tau),
-            num_ctx=self.render_any(self._ollama_num_ctx),
-            num_gpu=self.render_any(self._ollama_num_gpu),
-            num_thread=self.render_any(self._ollama_num_thread),
-            repeat_last_n=self.render_any(self._ollama_repeat_last_n),
-            repeat_penalty=self.render_any(self._ollama_repeat_penalty),
-            temperature=self.render_any(self._ollama_temperature),
-            stop=self.render_any(self._ollama_stop),
-            tfs_z=self.render_any(self._ollama_tfs_z),
-            top_k=self.render_any(self._ollama_top_k),
-            top_p=self.render_any(self._ollama_top_p),
-            system=self.render_any(self._ollama_system),
-            template=self.render_any(self._ollama_template),
-            format=self.render_any(self._ollama_format),
-            timeout=self.render_any(self._ollama_timeout),
-            callback_manager=self.get_callback_manager(),
-        )
+        return memory
+
+    @lru_cache(maxsize=1)
+    def save_chat_context(self, input: Any, output: Any):
+        history_file_name = self.get_rendered_history_file_name()
+        if history_file_name is None:
+            return
+        conversations = self.get_chat_context()
+        if conversations is None:
+            conversations: List[Mapping[str, Mapping[str, Any]]] = []
+        conversations.append({
+            'input': input,
+            'output': output
+        })
+        with open(history_file_name, 'w') as file:
+            file.write(json.dumps(conversations))
+
+    @lru_cache(maxsize=1)
+    def get_chat_context(self) -> List[Mapping[str, Mapping[str, Any]]] | None:
+        history_file_name = self.get_rendered_history_file_name()
+        if history_file_name is None or not os.path.isfile(history_file_name):
+            return None
+        with open(history_file_name, 'r') as file:
+            return json.loads(file.read())
+
+    @lru_cache(maxsize=1)
+    def get_rendered_history_file_name(self) -> str | None:
+        if self._history_file_name is None:
+            return None
+        return os.path.expanduser(self.render_str(self._history_file_name))
+
+    @lru_cache(maxsize=1)
+    def get_rendered_user_prompt(self) -> Any:
+        return self.render_str(self._user_prompt)
+
+    @lru_cache(maxsize=1)
+    def get_rendered_system_prompt(self) -> str:
+        return self.render_str(self._system_prompt)

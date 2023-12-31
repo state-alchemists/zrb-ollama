@@ -31,17 +31,21 @@ zrb-ollama "Why is the sky blue?"
 <summary>See the result:</summary>
 
 ```
-🤖 ○ ◷ 2023-12-28 07:52:14.327 ❁  56368 → 1/3 🦙              prompt • Context file: /home/gofrendi/.zrb-ollama-context.json
-🤖 ○ ◷ 2023-12-28 07:52:14.327 ❁  56368 → 1/3 🦙              prompt • Sending request...
-🤖 ○ ◷ 2023-12-28 07:52:31.962 ❁  56368 → 1/3 🦙              prompt • Waiting for response...
-    The color of the sky appears blue due to a process called Rayleigh scattering. When sunlight, which is made up of different colors, enters Earth's atmosphere, it interacts with various gases and particles in the air. Blue light has a shorter wavelength and gets scattered more easily than other colors, such as red or yellow. As a result, when we look up at the sky, we predominantly see the blue light that has been scattered, making the sky appear blue to our eyes.
-🤖 ○ ◷ 2023-12-28 07:53:02.411 ❁  56368 → 1/3 🦙              prompt • Response completed
-Support zrb growth and development!
+ The sky appears blue during the day because of the scattering of sunlight by the Earth's atmosphere. When sunlight enters the Earth's atmosphere, it is scattered in all directions by molecules such as oxygen and nitrogen. Blue light has a shorter wavelength and scatters more easily than other colors, so it is scattered more widely across the sky, making it appear blue. This phenomenon is known as Rayleigh scattering.
+ Support zrb growth and development!
 ☕ Donate at: https://stalchmst.com/donation
 🐙 Submit issues/PR at: https://github.com/state-alchemists/zrb
 🐤 Follow us at: https://twitter.com/zarubastalchmst
-🤖 ○ ◷ 2023-12-28 07:53:02.417 ❁  56368 → 1/3 🦙              prompt • Completed in 48.08835458755493 seconds
- The color of the sky appears blue due to a process called Rayleigh scattering. When sunlight, which is made up of different colors, enters Earth's atmosphere, it interacts with various gases and particles in the air. Blue light has a shorter wavelength and gets scattered more easily than other colors, such as red or yellow. As a result, when we look up at the sky, we predominantly see the blue light that has been scattered, making the sky appear blue to our eyes.
+🤖 ○ ◷ 2023-12-31 10:42:03.249 ❁  49899 → 1/3 🦙              prompt • Completed in 24.471537828445435 seconds
+ The sky appears blue during the day because of the scattering of sunlight by the Earth's atmosphere. When sunlight enters the Earth's atmosphere, it is scattered in all directions by molecules such as oxygen and nitrogen. Blue light has a shorter wavelength and scatters more easily than other colors, so it is scattered more widely across the sky, making it appear blue. This phenomenon is known as Rayleigh scattering.
+
+ The color of the sky appears blue due to a natural phenomenon called Rayleigh scattering. As sunlight reaches Earth's atmosphere, it interacts with different gases and particles in the air. Blue light has a shorter wavelength and gets scattered more easily than other colors, such as red or yellow. This scattering scatters the blue light in all directions, making the sky appear blue during a clear day. However, at sunrise and sunset, the sky can display various shades of red, orange, and pink due to the presence of dust, pollutants, and water droplets in the atmosphere that scatter longer wavelengths (red and yellow) more effectively.Support zrb growth and development!
+☕ Donate at: https://stalchmst.com/donation
+🐙 Submit issues/PR at: https://github.com/state-alchemists/zrb
+🐤 Follow us at: https://twitter.com/zarubastalchmst
+🤖 ○ ◷ 2023-12-31 10:31:39.541 ❁  45446 → 1/3 🦙              prompt • Completed in 72.80772066116333 seconds
+ The color of the sky appears blue due to a natural phenomenon called Rayleigh scattering. As sunlight reaches Earth's atmosphere, it interacts with different gases and particles in the air. Blue light has a shorter wavelength and gets scattered more easily than other colors, such as red or yellow. This scattering scatters the blue light in all directions, making the sky appear blue during a clear day. However, at sunrise and sunset, the sky can display various shades of red, orange, and pink due to the presence of dust, pollutants, and water droplets in the atmosphere that scatter longer wavelengths (red and yellow) more effectively.
+ The sky appears blue because of a process called scattering. When sunlight enters the Earth's atmosphere, it collides with molecules such as oxygen and nitrogen dioxide, which scatter the light in all directions. Blue light has a shorter wavelength and is scattered more easily than other colors, so it is more visible to our eyes and therefore appears blue in the sky.Support zrb growth and development!
 ```
 
 </details>
@@ -56,33 +60,24 @@ zrb-ollama "Explain in more detail"
 <summary>See the result:</summary>
 
 ```
-🤖 ○ ◷ 2023-12-28 07:56:06.981 ❁  58272 → 1/3 🦙              prompt • Context file: /home/gofrendi/.zrb-ollama-context.json
-🤖 ○ ◷ 2023-12-28 07:56:06.982 ❁  58272 → 1/3 🦙              prompt • Sending request...
-🤖 ○ ◷ 2023-12-28 07:56:32.304 ❁  58272 → 1/3 🦙              prompt • Waiting for response...
-    Certainly! The color of the sky is an intriguing optical phenomenon that results from the scattering of sunlight in Earth's atmosphere. To provide a more detailed explanation, let's delve into the physics behind it.
+ Sure, I'd be happy to explain in more detail!
 
-    First, it's important to understand that sunlight is composed of various colors, each with its own distinct wavelength. The electromagnetic spectrum includes radio waves, microwaves, infrared radiation, visible light, ultraviolet radiation, and X-rays. Visible light, which we can see, comprises approximately 400 to 780 nanometers (nm) in wavelength. Blue light has a shorter wavelength, typically between 450 and 495 nm.
+    When sunlight enters the Earth's atmosphere, it is scattered in all directions by molecules such as oxygen and nitrogen. Blue light has a shorter wavelength and scatters more easily than other colors, so it is scattered more widely across the sky. This means that when we look up at the sky during the day, we see a lot of blue light scattered in different directions.
 
-    As sunlight enters Earth's atmosphere, it interacts with various gases and particles, such as nitrogen (N2), oxygen (O2), water vapor (H2O), and dust particles. These molecules and particles scatter the sunlight in all directions due to their size and the particular wavelengths of light they interact with most strongly. This phenomenon is called scattering.
+    This phenomenon is known as Rayleigh scattering, named after British scientist Lord Rayleigh who discovered it in 1904. The amount and direction of scattering depends on several factors, including the wavelength of the light (which determines how much it scatters),
+ the temperature of the air (which affects how much water vapor is present), and the altitude of the sun in the sky (which determines where the light has to travel through the atmosphere before reaching our eyes).
 
-    Now comes the interesting part: Blue light gets scattered more easily than other colors, such as red or yellow, due to its shorter wavelength. Specifically, Rayleigh scattering causes the sky to appear blue. Rayleigh scattering occurs when the gas molecules in the atmosphere scatter the short-wavelength light more effectively than longer wavelengths. This is because the size of the gas molecules in the Earth's atmosphere is much smaller than the wavelength of visible light, and they interact more with shorter-wavelength blue light than longer-wavelength red or yellow light.
-
-    As a result, when we look up at the sky, we predominantly see the blue light that has been scattered, making the sky appear blue to our eyes. It's important to note that this is not an all-encompassing explanation, as other factors can influence the color of the sky, such as pollution and the presence of other atmospheric particles. Nonetheless, the fundamental process of Rayleigh scattering explains why the sky appears blue most of the time under clear weather conditions.
-🤖 ○ ◷ 2023-12-28 07:59:53.549 ❁  58272 → 1/3 🦙              prompt • Response completed
+    So, when we see a blue sky during the day, we can thank Rayleigh scattering for making it appear that way.
 Support zrb growth and development!
 ☕ Donate at: https://stalchmst.com/donation
 🐙 Submit issues/PR at: https://github.com/state-alchemists/zrb
 🐤 Follow us at: https://twitter.com/zarubastalchmst
-🤖 ○ ◷ 2023-12-28 07:59:53.550 ❁  58272 → 1/3 🦙              prompt • Completed in 226.5693118572235 seconds
- Certainly! The color of the sky is an intriguing optical phenomenon that results from the scattering of sunlight in Earth's atmosphere. To provide a more detailed explanation, let's delve into the physics behind it.
+🤖 ○ ◷ 2023-12-31 10:43:10.450 ❁  50315 → 1/3 🦙              prompt • Completed in 56.23700976371765 seconds
+ Sure, I'd be happy to explain in more detail!
 
-First, it's important to understand that sunlight is composed of various colors, each with its own distinct wavelength. The electromagnetic spectrum includes radio waves, microwaves, infrared radiation, visible light, ultraviolet radiation, and X-rays. Visible light, which we can see, comprises approximately 400 to 780 nanometers (nm) in wavelength. Blue light has a shorter wavelength, typically between 450 and 495 nm.
+When sunlight enters the Earth's atmosphere, it is scattered in all directions by molecules such as oxygen and nitrogen. Blue light has a shorter wavelength and scatters more easily than other colors, so it is scattered more widely across the sky. This means that when we look up at the sky during the day, we see a lot of blue light scattered in different directions.
 
-As sunlight enters Earth's atmosphere, it interacts with various gases and particles, such as nitrogen (N2), oxygen (O2), water vapor (H2O), and dust particles. These molecules and particles scatter the sunlight in all directions due to their size and the particular wavelengths of light they interact with most strongly. This phenomenon is called scattering.
-
-Now comes the interesting part: Blue light gets scattered more easily than other colors, such as red or yellow, due to its shorter wavelength. Specifically, Rayleigh scattering causes the sky to appear blue. Rayleigh scattering occurs when the gas molecules in the atmosphere scatter the short-wavelength light more effectively than longer wavelengths. This is because the size of the gas molecules in the Earth's atmosphere is much smaller than the wavelength of visible light, and they interact more with shorter-wavelength blue light than longer-wavelength red or yellow light.
-
-As a result, when we look up at the sky, we predominantly see the blue light that has been scattered, making the sky appear blue to our eyes. It's important to note that this is not an all-encompassing explanation, as other factors can influence the color of the sky, such as pollution and the presence of other atmospheric particles. Nonetheless, the fundamental process of Rayleigh scattering explains why the sky appears blue most of the time under clear weather conditions.
+This phenomenon is known as Rayleigh scattering, named after British scientist Lord Rayleigh who discovered it in 1904. The amount and direction of scattering depends on several factors, including the wavelength of the light (which determines how much it scatters), the temperature of the air (which affects how much water vapor is present), and the altitude of the sun in the sky (which determines where the light has to travel through the atmosphere before reaching our eyes).
 ```
 
 </details>
@@ -151,15 +146,17 @@ You can also import `zrb-ollama` into your Zrb project and perform some fun thin
 
 ```python
 from zrb import runner
-from zrb_ollama import PromptTask
+from zrb_ollama import PromptTask, ollama_chat_model_factory
 
 chat = PromptTask(
     name='chat',
     prompt='echo {{ " ".join(input._args) if input._args | length > 0 else "tell me some fun fact" }}',  # noqa
-    ollama_model='mistral',
-    ollama_temperature=0.8,
-    ollama_num_gpu=0,
-    ollama_system='You are a code tutor. You eager to explain code in a very detail manner',  # noqa
+    system_prompt='You are a code tutor. You eager to explain code in a very detail manner',  # noqa
+    chat_model_factory=ollama_chat_model_factory(
+        model='mistral',
+        temperature=0.8,
+        num_gpu=0,
+    ),
     history_file='.ctx.json'
 )
 runner.register(chat)

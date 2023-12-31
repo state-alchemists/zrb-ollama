@@ -4,6 +4,8 @@ from zrb.helper.accessories.color import colored
 from .builtin.install import install
 from .task.prompt_task import PromptTask
 from .config import DEFAULT_MODEL, DEFAULT_OLLAMA_BASE_URL, VERBOSE_EVAL
+from .factory.chat_model import ollama_chat_model_factory
+from .factory.chat_memory import chat_conversation_buffer_window_memory_factory
 
 import os
 import subprocess
@@ -17,16 +19,16 @@ _HOME_DIR = os.path.expanduser('~')
 
 
 def vanilla_prompt():
-    prompt = _get_user_prompt()
-    prompt_task = _create_prompt_task(prompt=prompt)
+    user_prompt = _get_user_prompt()
+    prompt_task = _create_prompt_task(prompt=user_prompt)
     prompt_fn = prompt_task.to_function()
     prompt_fn()
 
 
 def python_prompt():
-    prompt = _get_user_prompt()
+    user_prompt = _get_user_prompt()
     prompt_task = _create_prompt_task(
-        prompt=prompt,
+        prompt=user_prompt,
         system_prompt='\n'.join([
             "You are a Python code generator.",
             "Your task is to interpret the user's input as a Python coding task and generate a Python code that fulfills the request.",  # noqa
@@ -47,21 +49,22 @@ def python_prompt():
 def _create_prompt_task(
     prompt: str = '',
     system_prompt: str = '',
-    history_file: str = ''
 ) -> Task:
-    if history_file == '':
-        history_file = os.path.join(
-            _HOME_DIR, '.zrb-ollama-context.json'
-        )
     prompt_task = PromptTask(
         name='prompt',
         icon='🦙',
         color='light_green',
         prompt=prompt,
-        ollama_base_url=DEFAULT_OLLAMA_BASE_URL,
-        ollama_model=DEFAULT_MODEL,
-        ollama_system=system_prompt,
-        history_file=history_file
+        system_prompt=system_prompt,
+        chat_model_factory=ollama_chat_model_factory(
+            base_url=DEFAULT_OLLAMA_BASE_URL,
+            model=DEFAULT_MODEL,
+        ),
+        chat_memory_factory=chat_conversation_buffer_window_memory_factory(
+            k=3
+        ),
+        # llm_chain_factory=llm_chain_factory(verbose=True),
+        history_file=os.path.join(_HOME_DIR, '.zrb-ollama-context.json')
     )
     if DEFAULT_OLLAMA_BASE_URL.rstrip('/') in _LOCAL_OLLAMA_BASE_URLS:
         prompt_task.add_upstream(install)
@@ -118,7 +121,7 @@ def _extract_python_script(response: str) -> str:
         is_code = False
         codes = []
         for line in lines:
-            if line == '```python' or line == '```':
+            if not is_code and (line == '```python' or line == '```'):
                 is_code = True
                 continue
             if is_code and line == '```':
