@@ -1,10 +1,10 @@
-![](https://raw.githubusercontent.com/goFrendiAsgard/zrb-ollama/main/_images/zrb/android-chrome-192x192.png)
+![](https://raw.githubusercontent.com/goFrendiAsgard/zrb-ollama/main/_images/android-chrome-192x192.png)
 
 # Zrb Ollama
 
-Zrb Ollama is a [pypi](https://pypi.org) package that acts as Ollama's wrapper, allowing you to incorporate LLM into your workflow.
+Zrb Ollama is a [pypi](https://pypi.org) package that acts as Ollama and LangChain wrapper, allowing you to incorporate LLM into your workflow.
 
-## Installation
+# Installation
 
 You can install Zrb Ollama by invoking any of the following commands:
 
@@ -19,128 +19,141 @@ pip install --use-feature=in-tree-build path/to/this/directory
 
 ## Installing Ollama
 
-You can install Ollama by visiting the official website: [`https://ollama.ai/`](https://ollama.ai/).
+By default, Zrb Ollama uses Ollama-based LLM. You can install Ollama by visiting the official website: [`https://ollama.ai/`](https://ollama.ai/).
 
-## Talk to Zrb Ollama
+You can change this behavior by setting `OPENAI_API_KEY`.
 
-Once you install Zrb Ollama, you can then run it by invoking the following command:
+# Configuration
+
+You can configure Zrb Ollama using a few environment variables:
+
+- `OPENAI_API_KEY`: If set, Zrb-ollama will use OpenAI instead of Ollama.
+- `ZRB_OLLAMA_BASE_URL`: Default Ollama base URL. If not specified, Zrb Ollama will use `http://localhost:11434`.
+- `ZRB_OLLAMA_DEFAULT_MODEL`: Default Ollama model. If not specified, Zrb Ollama will use `mistral`.
+
+# Talk to Zrb Ollama
+
+Zrb Ollama provides a simple CLI command to interact with the LLM. This CLI command also manages your chat history and saves everything under `~/.zrb-ollama-context.json`.
+
+Let's see the following example:
 
 ```bash
 zrb-ollama "Why is the sky blue?"
 ```
 
 <details>
-<summary>See the result:</summary>
+<summary>👇See the output</summary>
 
 ```
- The sky appears blue during the day because of the scattering of sunlight by the Earth's atmosphere. When sunlight enters the Earth's atmosphere, it is scattered in all directions by molecules such as oxygen and nitrogen. Blue light has a shorter wavelength and scatters more easily than other colors, so it is scattered more widely across the sky, making it appear blue. This phenomenon is known as Rayleigh scattering.
- Support zrb growth and development!
-☕ Donate at: https://stalchmst.com/donation
-🐙 Submit issues/PR at: https://github.com/state-alchemists/zrb
-🐤 Follow us at: https://twitter.com/zarubastalchmst
-🤖 ○ ◷ 2023-12-31 10:42:03.249 ❁  49899 → 1/3 🦙              prompt • Completed in 24.471537828445435 seconds
- The sky appears blue during the day because of the scattering of sunlight by the Earth's atmosphere. When sunlight enters the Earth's atmosphere, it is scattered in all directions by molecules such as oxygen and nitrogen. Blue light has a shorter wavelength and scatters more easily than other colors, so it is scattered more widely across the sky, making it appear blue. This phenomenon is known as Rayleigh scattering.
-
- The color of the sky appears blue due to a natural phenomenon called Rayleigh scattering. As sunlight reaches Earth's atmosphere, it interacts with different gases and particles in the air. Blue light has a shorter wavelength and gets scattered more easily than other colors, such as red or yellow. This scattering scatters the blue light in all directions, making the sky appear blue during a clear day. However, at sunrise and sunset, the sky can display various shades of red, orange, and pink due to the presence of dust, pollutants, and water droplets in the atmosphere that scatter longer wavelengths (red and yellow) more effectively.Support zrb growth and development!
-☕ Donate at: https://stalchmst.com/donation
-🐙 Submit issues/PR at: https://github.com/state-alchemists/zrb
-🐤 Follow us at: https://twitter.com/zarubastalchmst
-🤖 ○ ◷ 2023-12-31 10:31:39.541 ❁  45446 → 1/3 🦙              prompt • Completed in 72.80772066116333 seconds
- The color of the sky appears blue due to a natural phenomenon called Rayleigh scattering. As sunlight reaches Earth's atmosphere, it interacts with different gases and particles in the air. Blue light has a shorter wavelength and gets scattered more easily than other colors, such as red or yellow. This scattering scatters the blue light in all directions, making the sky appear blue during a clear day. However, at sunrise and sunset, the sky can display various shades of red, orange, and pink due to the presence of dust, pollutants, and water droplets in the atmosphere that scatter longer wavelengths (red and yellow) more effectively.
- The sky appears blue because of a process called scattering. When sunlight enters the Earth's atmosphere, it collides with molecules such as oxygen and nitrogen dioxide, which scatter the light in all directions. Blue light has a shorter wavelength and is scattered more easily than other colors, so it is more visible to our eyes and therefore appears blue in the sky.Support zrb growth and development!
+The sky appears blue due to a phenomenon called Rayleigh scattering. When sunlight enters Earth's atmosphere, it encounters molecules and tiny particles in the air. The shorter wavelengths of light, such as blue and violet, are scattered more strongly by these particles compared to the longer wavelengths of light, like red and orange. As a result, the blue light gets scattered in all directions, creating the blue appearance of the sky.
 ```
 
 </details>
 
-Zrb Ollama will save your context history in `~/.zrb-ollama-context.json`. Thus, you can continue the conversation and retain the context
+Zrb Ollama will explain why the sky is blue.
+
+Next, you can ask it to give a more detailed explanation:
 
 ```bash
-zrb-ollama "Explain in more detail"
+zrb-ollama "Explain in more detailed"
 ```
 
 <details>
-<summary>See the result:</summary>
+<summary>👇See the output</summary>
 
 ```
- Sure, I'd be happy to explain in more detail!
+Sure! When sunlight reaches Earth's atmosphere, it is composed of different colors of light, each with a different wavelength. The shorter wavelengths, such as blue and violet, have higher energy, while the longer wavelengths, such as red and orange, have lower energy.
 
-    When sunlight enters the Earth's atmosphere, it is scattered in all directions by molecules such as oxygen and nitrogen. Blue light has a shorter wavelength and scatters more easily than other colors, so it is scattered more widely across the sky. This means that when we look up at the sky during the day, we see a lot of blue light scattered in different directions.
+As sunlight enters the atmosphere, it interacts with the molecules and tiny particles present in the air. These particles include nitrogen and oxygen molecules, as well as dust, water droplets, and other small particles.
 
-    This phenomenon is known as Rayleigh scattering, named after British scientist Lord Rayleigh who discovered it in 1904. The amount and direction of scattering depends on several factors, including the wavelength of the light (which determines how much it scatters),
- the temperature of the air (which affects how much water vapor is present), and the altitude of the sun in the sky (which determines where the light has to travel through the atmosphere before reaching our eyes).
+The interaction between the sunlight and these particles causes a scattering of light. This scattering process is known as Rayleigh scattering. It is named after the British physicist Lord Rayleigh, who first explained it in the 19th century.
 
-    So, when we see a blue sky during the day, we can thank Rayleigh scattering for making it appear that way.
-Support zrb growth and development!
-☕ Donate at: https://stalchmst.com/donation
-🐙 Submit issues/PR at: https://github.com/state-alchemists/zrb
-🐤 Follow us at: https://twitter.com/zarubastalchmst
-🤖 ○ ◷ 2023-12-31 10:43:10.450 ❁  50315 → 1/3 🦙              prompt • Completed in 56.23700976371765 seconds
- Sure, I'd be happy to explain in more detail!
+Rayleigh scattering occurs when the size of the particles in the atmosphere is much smaller than the wavelength of light. In this case, the scattering is inversely proportional to the fourth power of the wavelength. This means that shorter wavelengths, such as blue and violet light, are scattered much more strongly than longer wavelengths, such as red and orange light.
 
-When sunlight enters the Earth's atmosphere, it is scattered in all directions by molecules such as oxygen and nitrogen. Blue light has a shorter wavelength and scatters more easily than other colors, so it is scattered more widely across the sky. This means that when we look up at the sky during the day, we see a lot of blue light scattered in different directions.
+As a result, when sunlight enters the atmosphere, the blue and violet light is scattered in all directions by the particles in the air. This scattered blue light then reaches our eyes from all parts of the sky, making it appear blue to us.
 
-This phenomenon is known as Rayleigh scattering, named after British scientist Lord Rayleigh who discovered it in 1904. The amount and direction of scattering depends on several factors, including the wavelength of the light (which determines how much it scatters), the temperature of the air (which affects how much water vapor is present), and the altitude of the sun in the sky (which determines where the light has to travel through the atmosphere before reaching our eyes).
+It's important to note that the scattering of light is not limited to just the blue color. However, since our eyes are more sensitive to blue light, we perceive the scattered blue light more prominently, hence the blue appearance of the sky.
+
+At sunrise or sunset, when the sun is lower in the sky, the sunlight has to pass through a larger portion of the atmosphere before reaching us. This longer path causes more scattering and absorption of shorter wavelengths, like blue and violet light, resulting in the red, orange, and pink hues commonly seen during these times.
+
+In summary, the sky appears blue due to Rayleigh scattering, where the shorter wavelengths of sunlight, particularly blue and violet light, are scattered more strongly by the particles in the atmosphere, making the scattered blue light dominant in our perception.
 ```
 
 </details>
 
+It will understand that you asked for a more detailed explanation of why the sky is blue.
 
-## Talk is Cheap, Show Me The Code
+# Talk is Cheap, Show Me The Code
 
-Zrb Ollama can help you generate and run Python code.
+Furthermore, Zrb Ollama also allows you to use an AI Agent. This AI Agent can access the internet and interact with the Python interpreter.
+
+Zrb Ollama Agent will show you the reasoning process, the solution, and the respecting Python code.
+
+Note that for this to work, you need better LLM models like `Mistral` or Open AI.
+
+Let's see the following example:
 
 ```bash
-zrb-ollama-py "x^2 + 5x + 3 = 0, find x"
+# You can use Ollama's mistral model:
+# export ZRB_OLLAMA_DEFAULT_MODEL=mistral
+
+# or you can use Open AI:
+export OPENAI_API_KEY=your-api-key
+
+zrb-ollama-agent "What is the area of a square with 20 cm perimeter?"
 ```
 
 <details>
-<summary>See the result:</summary>
+<summary>👇See the output</summary>
 
 ```
-🤖 ○ ◷ 2023-12-28 07:30:38.357 ❁  47317 → 1/3 🦙              prompt • Context file: /home/gofrendi/.zrb-ollama-context.json
-🤖 ○ ◷ 2023-12-28 07:30:38.357 ❁  47317 → 1/3 🦙              prompt • Sending request...
-🤖 ○ ◷ 2023-12-28 07:32:41.068 ❁  47317 → 1/3 🦙              prompt • Waiting for response...
-    Here's the Python code snippet that uses the quadratic formula to find the solutions for the given equation:
+Thought: To find the area of a square, we need to know the side length. We can calculate the side length by dividing the perimeter by 4. Once we have the side length, we can use the formula for the area of a square, which is side length squared.
+
+    Action: Python code
 
     ```python
-    import cmath
-
-    # coefficients
-    a = 1
-    b = 5
-    c = 3
-
-    # calculate discriminant
-    discriminant = (b ** 2) - (4 * a * c)
-
-    # find two solutions
-    sol1 = (-b + cmath.sqrt(discriminant)) / (2 * a) if discriminant >= 0 else None
-    sol2 = (-b - cmath.sqrt(-discriminant)) / (2 * a) if discriminant >= 0 else None
-
-    print("Solutions for x:")
-    if sol1 is not None:
-        print(f"x1 = {sol1.real} + {sol1.imag}j")
-    if sol2 is not None:
-        print(f"x2 = {sol2.real} + {sol2.imag}j")
+    # Calculating the area of a square
+    perimeter = 20
+    side_length = perimeter / 4
+    area = side_length ** 2
+    # Displaying the solution
+    print(area)
     ```
+    I need to provide the input for the action, which is the value of the perimeter.
 
-    This code imports the `cmath` library, which provides complex number support since the quadratic formula can result in complex solutions. The coefficients are defined, and then the discriminant is calculated using the given equation's coefficients. Finally, the two solutions for x are found, and their real and imaginary parts (if applicable) are printed out. If the discriminant is negative, there are no real solutions.
-🤖 ○ ◷ 2023-12-28 07:34:36.751 ❁  47317 → 1/3 🦙              prompt • Response completed
-🤖 ○ ◷ 2023-12-28 07:34:36.752 ❁  47317 → 1/1 ✏️           evaluate • Waiting for evaluation...
-Solutions for x:
-x1 = -0.6972243622680054 + 0.0j
-x2 = -2.5 + -1.8027756377319946j
-Support zrb growth and development!
-☕ Donate at: https://stalchmst.com/donation
-🐙 Submit issues/PR at: https://github.com/state-alchemists/zrb
-🐤 Follow us at: https://twitter.com/zarubastalchmst
-🤖 ○ ◷ 2023-12-28 07:34:36.765 ❁  47317 → 1/1 ✏️           evaluate • Completed in 238.40946054458618 seconds
-Solutions for x:
-x1 = -0.6972243622680054 + 0.0j
-x2 = -2.5 + -1.8027756377319946j
+    Action: python_repl
+    Action Input: 20
+    The code executed successfully and provided the expected output.
+
+    Final Answer:
+    - Solution: The area of a square with a perimeter of 20 cm is 25 square centimeters.
+    - Code:
+      ```python
+      # Calculating the area of a square
+      perimeter = 20
+      side_length = perimeter / 4
+      area = side_length ** 2
+      # Displaying the solution
+      print(area)
+      ```
 ```
+
 </details>
 
+# Getting Creative
+
+The Zrb Ollama CLI program is helpful on its own. You can, for example, ask the LLM model to explain a code for you and refactor it.
+
+```bash
+zrb-ollama "What this code do? $(cat fibo.py)"
+zrb-ollama "Can you make it better?"
+```
+
+There are a lot of things you can do with Zrb Ollama.
+
+# Creating Custom PromptTasks
+
+Finally, you can incorporate Zrb Ollama into your [Zrb](https://pypi.org/project/zrb) project workflow. Zrb Ollama introduce a `PromptTask` class that you can use to create more customized LLM tasks.
 
 ## Creating a PromptTask
 
@@ -252,12 +265,6 @@ To run again: zrb chat "Can you make it better?"
 
 
 # Configuration
-
-You can configure Zrb Ollama using a few environment variables:
-
-- `ZRB_OLLAMA_BASE_URL`: Default Ollama base URL. If not specified, Zrb Ollama will use `http://localhost:11434`.
-- `ZRB_OLLAMA_DEFAULT_MODEL`: Default Ollama model. If not specified, Zrb Ollama will use `mistral`.
-
 
 # For maintainers
 

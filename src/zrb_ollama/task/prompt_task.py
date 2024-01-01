@@ -17,6 +17,7 @@ from ..factory.schema import (
     AgentFactory, PromptTemplateFactory, AgentToolFactory
 )
 from .any_prompt_task import AnyPromptTask
+from ..config import OPENAI_API_KEY
 
 import json
 import os
@@ -146,7 +147,12 @@ class PromptTask(AnyPromptTask, Task):
     def get_chat_model(self) -> BaseChatModel:
         if self._create_chat_model is not None:
             return self._create_chat_model(self)
-        from ..factory.chat_model import ollama_chat_model_factory
+        from ..factory.chat_model import (
+            ollama_chat_model_factory, openai_chat_model_factory
+        )
+        if OPENAI_API_KEY != '':
+            create_chat_model = openai_chat_model_factory()
+            return create_chat_model(self)
         create_chat_model = ollama_chat_model_factory()
         return create_chat_model(self)
 
