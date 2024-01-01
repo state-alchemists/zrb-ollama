@@ -4,7 +4,7 @@ build-backend = "flit_core.buildapi"
 
 [project]
 name = "zrb-ollama"
-version = "0.0.13"
+version = "0.0.14"
 authors = [
   { name="goFrendiAsgard", email="gofrendiasgard@gmail.com" },
 ]
@@ -21,6 +21,8 @@ dependencies = [
   "langchain~=0.0.353",
   "langchain-community~=0.0.7",
   "langchain-core~=0.1.4",
+  "duckduckgo_search==4.1.1",
+  "openai~=1.6.1"
 ]
  
 

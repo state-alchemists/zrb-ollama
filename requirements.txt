@@ -7,3 +7,5 @@ keyring==24.2.0     # authenticator (used by twine)
 langchain==0.0.353
 langchain-community==0.0.7
 langchain-core==0.1.4
+duckduckgo_search==4.1.1
+openai==1.6.1
