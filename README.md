@@ -1,10 +1,12 @@
+![](https://raw.githubusercontent.com/goFrendiAsgard/zrb-ollama/main/_images/zrb/android-chrome-192x192.png)
+
 # Zrb Ollama
 
 Zrb Ollama is a [pypi](https://pypi.org) package that acts as Ollama's wrapper, allowing you to incorporate LLM into your workflow.
 
 ## Installation
 
-You can install Zrb Ollama by invoking the following command:
+You can install Zrb Ollama by invoking any of the following commands:
 
 ```bash
 # From pypi
