@@ -23,9 +23,55 @@ import json
 import os
 import sys
 
+# flake8: noqa E501
 
 @typechecked
 class PromptTask(AnyPromptTask, Task):
+    """
+    A class representing a task that handles prompts, providing an interface for managing
+    various aspects of prompt-based interactions and executions.
+
+    Attributes:
+        name (str): The name of the task.
+        prompt (str): The user prompt for the task.
+        system_prompt (str): An optional system prompt for the task.
+        history_file (str | None): Optional file path for storing conversation history.
+        is_agent (str | bool): Flag to determine if the task acts as an agent.
+        llm_chain_factory (LLMChainFactory | None): Factory for creating LLM chains.
+        callback_manager_factory (CallbackManagerFactory | None): Factory for creating callback managers.
+        chat_model_factory (ChatModelFactory | None): Factory for creating chat models.
+        chat_prompt_template_factory (ChatPromptTemplateFactory | None): Factory for creating chat prompt templates.
+        chat_memory_factory (ChatMemoryFactory | None): Factory for creating chat memory.
+        agent_executor_factory (AgentExecutorFactory | None): Factory for creating agent executors.
+        agent_factory (AgentFactory | None): Factory for creating agents.
+        agent_llm_chain_factory (LLMChainFactory | None): Factory for creating agent LLM chains.
+        agent_prompt_template_factory (PromptTemplateFactory | None): Factory for creating agent prompt templates.
+        agent_tool_factories (List[AgentToolFactory]): List of factories for creating agent tools.
+        group (Group | None): The group to which this task belongs.
+        description (str): Description of the task.
+        inputs (List[AnyInput]): List of inputs for the task.
+        envs (Iterable[Env]): Iterable of environment variables for the task.
+        env_files (Iterable[EnvFile]): Iterable of environment files for the task.
+        icon (str | None): Icon for the task.
+        color (str | None): Color associated with the task.
+        retry (int): Number of retries for the task.
+        retry_interval (float | int): Interval between retries.
+        upstreams (Iterable[AnyTask]): Iterable of upstream tasks.
+        checkers (Iterable[AnyTask]): Iterable of checker tasks.
+        checking_interval (float | int): Interval for checking task status.
+        on_triggered (OnTriggered | None): Callback for when the task is triggered.
+        on_waiting (OnWaiting | None): Callback for when the task is waiting.
+        on_skipped (OnSkipped | None): Callback for when the task is skipped.
+        on_started (OnStarted | None): Callback for when the task starts.
+        on_ready (OnReady | None): Callback for when the task is ready.
+        on_retry (OnRetry | None): Callback for when the task retries.
+        on_failed (OnFailed | None): Callback for when the task fails.
+        should_execute (bool | str | Callable[..., bool]): Condition for executing the task.
+        return_upstream_result (bool): Flag to return the result of upstream tasks.
+
+    This class is designed to handle various aspects of prompt-based tasks, including managing
+    chat interactions, executing agents or LLM chains, and handling task-related callbacks and settings.
+    """
     def __init__(
         self,
         name: str,

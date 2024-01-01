@@ -17,11 +17,9 @@ pip install git+https://github.com/goFrendiAsgard/zrb-ollama.git@main
 pip install --use-feature=in-tree-build path/to/this/directory
 ```
 
-## Installing Ollama
-
 By default, Zrb Ollama uses Ollama-based LLM. You can install Ollama by visiting the official website: [`https://ollama.ai/`](https://ollama.ai/).
 
-You can change this behavior by setting `OPENAI_API_KEY`.
+You can, however, change this behavior by setting `OPENAI_API_KEY`. When `OPENAI_API_KEY` is present, Zrb Ollama will use the Open AI API instead.
 
 # Configuration
 
@@ -153,118 +151,259 @@ There are a lot of things you can do with Zrb Ollama.
 
 # Creating Custom PromptTasks
 
-Finally, you can incorporate Zrb Ollama into your [Zrb](https://pypi.org/project/zrb) project workflow. Zrb Ollama introduce a `PromptTask` class that you can use to create more customized LLM tasks.
+Finally, you can incorporate Zrb Ollama into your [Zrb](https://pypi.org/project/zrb) project workflow. Zrb Ollama introduces a `PromptTask` class that you can use to create more customized LLM tasks.
 
-## Creating a PromptTask
-
-You can also import `zrb-ollama` into your Zrb project and perform some fun things:
+Let's see an example:
 
 ```python
 from zrb import runner
 from zrb_ollama import PromptTask, ollama_chat_model_factory
 
+# A simple chat task
 chat = PromptTask(
     name='chat',
     prompt='echo {{ " ".join(input._args) if input._args | length > 0 else "tell me some fun fact" }}',  # noqa
     system_prompt='You are a code tutor. You eager to explain code in a very detail manner',  # noqa
-    chat_model_factory=ollama_chat_model_factory(
-        model='mistral',
-        temperature=0.8,
-        num_gpu=0,
-    ),
-    history_file='.ctx.json'
 )
 runner.register(chat)
+
+# A simple agent task, by default the agent will be able to access Duckduckgo search. More on this later.
+agent = PromptTask(
+    name='agent',
+    prompt='echo {{ " ".join(input._args) if input._args | length > 0 else "tell me some fun fact" }}',  # noqa
+    system_prompt='You are a code tutor. You eager to explain code in a very detail manner',  # noqa
+    is_agent=True
+)
+runner.register(agent)
 ```
 
-```bash
-zrb chat "Please explain the following Python script: $(cat fibo.py)"
+## PromptTask Properties
+
+Each PrompTask has the following properties:
+
+- `name (str)`: The name of the task.
+- `prompt (str)`: The user prompt for the task.
+- `system_prompt (str)`: An optional system prompt for the task.
+- `history_file (str | None)`: Optional file path for storing conversation history.
+- `is_agent (str | bool)`: Flag to determine if the task acts as an agent.
+- `llm_chain_factory (LLMChainFactory | None)`: Factory for creating LLM chains.
+- `callback_manager_factory (CallbackManagerFactory | None)`: Factory for creating callback managers.
+- `chat_model_factory (ChatModelFactory | None)`: Factory for creating chat models.
+- `chat_prompt_template_factory (ChatPromptTemplateFactory | None)`: Factory for creating chat prompt templates.
+- `chat_memory_factory (ChatMemoryFactory | None)`: Factory for creating chat memory.
+- `agent_executor_factory (AgentExecutorFactory | None)`: Factory for creating agent executors.
+- `agent_factory (AgentFactory | None)`: Factory for creating agents.
+- `agent_llm_chain_factory (LLMChainFactory | None)`: Factory for creating agent LLM chains.
+- `agent_prompt_template_factory (PromptTemplateFactory | None)`: Factory for creating agent prompt templates.
+- `agent_tool_factories (List[AgentToolFactory])`: List of factories for creating agent tools.
+- `group (Group | None)`: The group to which this task belongs.
+- `description (str)`: Description of the task.
+- `inputs (List[AnyInput])`: List of inputs for the task.
+- `envs (Iterable[Env])`: Iterable of environment variables for the task.
+- `env_files (Iterable[EnvFile])`: Iterable of environment files for the task.
+- `icon (str | None)`: Icon for the task.
+- `color (str | None)`: Color associated with the task.
+- `retry (int)`: Number of retries for the task.
+- `retry_interval (float | int)`: Interval between retries.
+- `upstreams (Iterable[AnyTask])`: Iterable of upstream tasks.
+- `checkers (Iterable[AnyTask])`: Iterable of checker tasks.
+- `checking_interval (float | int)`: Interval for checking task status.
+- `on_triggered (OnTriggered | None)`: Callback for when the task is triggered.
+- `on_waiting (OnWaiting | None)`: Callback for when the task is waiting.
+- `on_skipped (OnSkipped | None)`: Callback for when the task is skipped.
+- `on_started (OnStarted | None)`: Callback for when the task starts.
+- `on_ready (OnReady | None)`: Callback for when the task is ready.
+- `on_retry (OnRetry | None)`: Callback for when the task retries.
+- `on_failed (OnFailed | None)`: Callback for when the task fails.
+- `should_execute (bool | str | Callable[..., bool])`: Condition for executing the task.
+- `return_upstream_result (bool)`: Flag to return the result of upstream tasks.
+
+## Factories
+
+To understand what factories are for, first, we need to see what a LangChain program looks like:
+
+```python
+from typing import Any
+from langchain.chat_models import ChatOllama, ChatOpenAI
+from langchain.callbacks.manager import CallbackManager
+from langchain.callbacks.streaming_stdout import (
+    StreamingStdOutCallbackHandler
+)
+from langchain.memory import ConversationBufferMemory
+from langchain.chains import LLMChain
+from langchain.prompts import (
+    ChatPromptTemplate, HumanMessagePromptTemplate, MessagesPlaceholder,
+    SystemMessagePromptTemplate
+)
+
+llm = ChatOllama(
+    model="mistral:cpu",
+    callback_manager=CallbackManager([StreamingStdOutCallbackHandler()]),
+    temperature=0.9,
+)
+
+prompt = ChatPromptTemplate(
+    messages=[
+        SystemMessagePromptTemplate.from_template('You always answers confidently.'),
+        MessagesPlaceholder(variable_name="chat_history"),
+        HumanMessagePromptTemplate.from_template("{question}"),
+    ]
+)
+
+memory = ConversationBufferMemory(
+    memory_key='chat_history', return_messages=True
+)
+
+memory.save_context(
+    {'input': 'Why is the sky blue?'},
+    {'output': 'The sky appears blue due to a phenomenon called Rayleigh scattering.'}
+)
+
+llm_chain = LLMChain(
+    llm=llm,
+    prompt=prompt,
+    memory=memory,
+    verbose=False
+)
+
+result = llm_chain.run(question='Why is the sky blue?')
 ```
 
-<details>
-<summary>See the result:</summary>
+You can see a lot of things going on. But let's focus on the `llm_chain`. You can see that you need a few other components to create a `llm_chain`:
 
-```
-🤖 ○ ◷ 2023-12-28 18:11:54.418 ❁  32106 → 1/3 🐻            zrb chat • Context file: .ctx.json
-🤖 ○ ◷ 2023-12-28 18:11:54.418 ❁  32106 → 1/3 🐻            zrb chat • Sending request...
-🤖 ○ ◷ 2023-12-28 18:24:32.398 ❁  32106 → 1/3 🐻            zrb chat • Waiting for response...
-    Sure thing! This code defines a Python function named `fibo` that calculates the Fibonacci sequence up to the nth number. Here's a step-by-step breakdown of how it works:
+- `llm`
+- `prompt`
+- `memory`
 
-    1. The function definition begins with `def fibo(n):`, which means we are defining a function named `fibo` that takes one argument, `n`.
-    2. The first line inside the function is an if statement: `if n <= 1:` This statement checks if the value of `n` is less than or equal to 1. If it is, then the condition is true and we execute the code inside the indented block.
-    3. Inside the if block, we return the value `1`. This is the base case for our Fibonacci sequence. The first number in the sequence (indexed at 0) is always 0, and the second number (indexed at 1) is always 1. Since our function accepts an argument of `n` instead of `n-1`, we set the base case to be when `n` is less than or equal to 1, which corresponds to the first two numbers in the sequence.
-    4. If the condition in the if statement is false (i.e., if `n > 1`), then we execute the code outside of the if block. The first line here is a recursive call to `fibo(n-1)`. This means that we are calling the `fibo` function with an argument one less than our original `n`, which corresponds to the previous number in the sequence.
-    5. The second recursive call inside the function is `fibo(n-2)`, which calculates the next number before that in the sequence.
-    6. Finally, we return the sum of the results from the two most recent calls to `fibo`: `return fibo(n-1) + fibo(n-2)`. This is how we calculate the nth number in the Fibonacci sequence by adding together the previous two numbers.
-    7. The last lines of the code are an if statement that checks if the script is being run directly (`if __name__ == '__main__'`), and if so, it prints out the result of calling `fibo(8)`. This allows us to test the function with a specific input value.
-🤖 ○ ◷ 2023-12-28 18:27:42.230 ❁  32106 → 1/3 🐻            zrb chat • Response completed
-Support zrb growth and development!
-☕ Donate at: https://stalchmst.com/donation
-🐙 Submit issues/PR at: https://github.com/state-alchemists/zrb
-🐤 Follow us at: https://twitter.com/zarubastalchmst
-🤖 ○ ◷ 2023-12-28 18:27:42.245 ❁  32106 → 1/3 🐻            zrb chat • Completed in 947.8267965316772 seconds
-To run again: zrb chat "Explain this code: def fibo(n):
-    if n <= 1:
-        return 1
-    return fibo(n-1) + fibo(n-2)
+LangChain allows you to swap the component with anything if the interface matches. For example, you can use bot `OpenAIChat` and `OllamaChat` as `llm`.
 
+PromptTask handles this by allowing you to define how to create elements based on other existing components. Let's see the following pseudo-code:
 
-if __name__ == '__main__':
-    print(fibo(8))"
-```
+```python
+class PromptTask(AnyPromptTask, BaseTask):
+    def __init__(
+        self, user_prompt, llm_factory, prompt_factory, memory_factory, llm_chain_factory
+    ):
+        self.user_prompt = user_prompt
+        self.llm_factory = llm_factory
+        self.prompt_factory = prompt_factory
+        self.memory_factory = memory_factory
+        self.llm_chain_factory = llm_chain_factory
+    
+    def run():
+        llm_chain = self.get_llm_chain()
+        return llm_chain.run(question=self.user_prompt) 
+    
+    @lru_cache(maxsize=1)
+    def get_llm(self):
+        return self.llm_factory(self) 
 
-</details>
+    @lru_cache(maxsize=1)
+    def get_prompt(self):
+        return self.prompt_factory(self)
 
-```bash
-zrb chat "Can you make it better?"
-```
+    @lru_cache(maxsize=1)
+    def get_memory(self):
+        return self.memory_factory(self)
 
-<details>
-<summary>See the result:</summary>
-
-```
-🤖 ○ ◷ 2023-12-28 18:29:37.978 ❁  39864 → 1/3 🍐            zrb chat • Context file: .ctx.json
-🤖 ○ ◷ 2023-12-28 18:29:37.978 ❁  39864 → 1/3 🍐            zrb chat • Sending request...
-🤖 ○ ◷ 2023-12-28 18:32:21.021 ❁  39864 → 1/3 🍐            zrb chat • Waiting for response...
-    Certainly! The current implementation of the `fibo` function using recursion is a common and effective way to calculate Fibonacci numbers, but it can be memory intensive for large inputs due to the repeated calculation of intermediate results. A more space-efficient alternative is to use an iterative approach instead.
-
-    Here's an example of how you could modify the `fibo` function to use iteration:
-
-    ```python
-    def fibo(n):
-        if n <= 0:
-            return "Input should be positive integer"
-        elif n == 1:
-            return 1
-        else:
-            a, b = 1, 1
-            for _ in range(n - 1):
-                a, b = b, a + b
-            return b
-
-    if __name__ == '__main__':
-        print(fibo(8))
-    ```
-
-    In this version of the function:
-
-    1. We still start by checking for edge cases, including `n <= 0`, which returns an error message and is not part of the Fibonacci sequence. We also check if `n == 1`, which is our base case and sets the initial value of our sequence to 1.                                                                            2. For larger values of `n`, we use a pair of variables, `a` and `b`, initialized to 1 in this example, to represent the previous two numbers in the Fibonacci sequence. We then enter a for loop that runs `n-1` times.                                                                                                  3. In each iteration of the loop, we update the values of `a` and `b` by swapping their values (`a, b = b, a + b`) and moving the new value of `b` one step forward in the sequence. This allows us to calculate each number in the sequence without having to store all previous results in memory.
-    4. Finally, we return the value of `b`, which is now the nth number in the Fibonacci sequence.
-
-    Using an iterative approach can be more space-efficient than recursion for large inputs, as it avoids the need to maintain a growing call stack. However, the choice between recursion and iteration ultimately depends on the specific use case and performance requirements of your application.
-🤖 ○ ◷ 2023-12-28 18:36:05.722 ❁  39864 → 1/3 🍐            zrb chat • Response completed
-Support zrb growth and development!
-☕ Donate at: https://stalchmst.com/donation
-🐙 Submit issues/PR at: https://github.com/state-alchemists/zrb
-🐤 Follow us at: https://twitter.com/zarubastalchmst
-🤖 ○ ◷ 2023-12-28 18:36:05.723 ❁  39864 → 1/3 🍐            zrb chat • Completed in 387.7480981349945 seconds    
-To run again: zrb chat "Can you make it better?"
+    @lru_cache(maxsize=1)
+    def get_llm_chain(self):
+        return self.llm_chain_factory(self)
 ```
 
-</details>
+Now, you can control how `get_llm`, `get_prompt`, `get_memory`, and `get_llm_chain` behave by setting up the factory properties.
+
+The `lru_cache` also ensures that the getter method will only be called once or less, so you won't lose reference to the components (i.e., when you call `get_llm` twice, the result will refer to the same object).
+
+### How Factories Work
+
+Let's continue with factories:
+
+```python
+def ollama_llm_factory(model, temperature):
+    def create_ollama_llm(task)
+        return ChatOllama(
+            model=model,
+            callback_manager=CallbackManager([StreamingStdOutCallbackHandler()]),
+            temperature=temperature,
+        ) 
+    return create_ollama_llm
+
+def openai_llm_factory(api_key, temperature):
+    def create_openai_llm(task)
+        return ChatOpenAI(
+            api_key,
+            callback_manager=CallbackManager([StreamingStdOutCallbackHandler()]),
+            streaming=True
+            temperature=temperature,
+        ) 
+    return create_openai_llm
+
+def llm_chain_factory(verbose):
+    def create_llm_chain(task):
+        return LLMChain(
+            llm=task.get_llm(),
+            prompt=task.get_prompt(),
+            memory=task.get_memory(),
+            verbose=verbose
+        )
+    return create_llm_chain
 
 
-# Configuration
+prompt_task = PromptTask(
+    user_prompt='Why is the sky blue?',
+    llm_factory=ollama_llm_factory(),
+    # ...
+    llm_chain_factory=llm_chain_factory()
+)
+```
+
+We will see how things work in details, by focusing on `PromptTask`'s `run`, `get_llm_chain`, and `get_llm` method.
+
+```python
+class PromptTask(AnyPromptTask, BaseTask):
+    # ...
+
+    def run():
+        llm_chain = self.get_llm_chain()
+        return llm_chain.run(question=self.user_prompt) 
+   
+    @lru_cache(maxsize=1)
+    def get_llm_chain(self):
+        return self.llm_chain_factory(self) 
+
+    @lru_cache(maxsize=1)
+    def get_llm(self):
+        return self.llm_factory(self) 
+
+    # ...
+```
+
+When Zrb calls `prompt_task.run()`, PromptTask will invoke `get_llm_chain` to get the `llm_chain`.
+
+When The Python interpreter calls `prompt_task.get_llm_chain()` for the first time, it will invoke `self.llm_chain_factory(self)`.
+
+In this case, it will run this piece of code:
+
+```python
+LLMChain(
+    llm=task.get_llm(),
+    prompt=task.get_prompt(),
+    memory=task.get_memory(),
+    verbose=verbose
+)
+```
+
+You can see that while LLMChain factory created the LLMChain, it asks the task to make `llm`, `prompt`, and `memory`. The process continues until all the necessary components are ready.
+
+### The Advantage
+
+By using factories, we create a dependency inversion mechanism. The mechanism allows you to:
+
+- Only create components whenever necessary
+- Swap components painlessly
+- Implement your custom factory without affecting the other components
+
 
 # For maintainers
 
