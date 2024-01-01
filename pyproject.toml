@@ -34,7 +34,7 @@ test = []
 
 [project.scripts]
 zrb-ollama = "zrb_ollama.__main__:vanilla_prompt"
-zrb-ollama-py = "zrb_ollama.__main__:python_prompt"
+zrb-ollama-agent = "zrb_ollama.__main__:agent_prompt"
 
 [tool.pytest.ini_options]
 pythonpath = [

@@ -2,8 +2,9 @@ from functools import lru_cache
 from langchain.callbacks.manager import CallbackManager
 from langchain.chains import LLMChain
 from langchain.memory.chat_memory import BaseChatMemory
-from langchain.prompts import ChatPromptTemplate
 from langchain_core.language_models.chat_models import BaseChatModel
+from langchain.prompts import ChatPromptTemplate, PromptTemplate
+from langchain.agents import Agent, AgentExecutor, Tool
 from zrb.helper.typecheck import typechecked
 from zrb.helper.typing import Any, Callable, Iterable, List, Mapping
 from zrb import (
@@ -12,13 +13,9 @@ from zrb import (
 )
 from ..factory.schema import (
     LLMChainFactory, CallbackManagerFactory, ChatModelFactory,
-    ChatPromptTemplateFactory, ChatMemoryFactory
+    ChatPromptTemplateFactory, ChatMemoryFactory, AgentExecutorFactory,
+    AgentFactory, PromptTemplateFactory, AgentToolFactory
 )
-from ..factory.callback_manager import callback_manager_factory as make_callback_manager_factory  # noqa
-from ..factory.chat_memory import chat_conversation_buffer_memory_factory as make_chat_memory_factory  # noqa
-from ..factory.chat_model import ollama_chat_model_factory as make_chat_model_factory  # noqa
-from ..factory.chat_prompt_template import chat_prompt_template_factory as make_chat_prompt_template_factory  # noqa
-from ..factory.llm_chain import llm_chain_factory as make_llm_chain_factory
 from .any_prompt_task import AnyPromptTask
 
 import json
@@ -34,11 +31,17 @@ class PromptTask(AnyPromptTask, Task):
         prompt: str,
         system_prompt: str = '',
         history_file: str | None = None,
+        is_agent: str | bool = False,
         llm_chain_factory: LLMChainFactory | None = None,
         callback_manager_factory: CallbackManagerFactory | None = None,
         chat_model_factory: ChatModelFactory | None = None,
         chat_prompt_template_factory: ChatPromptTemplateFactory | None = None,
         chat_memory_factory: ChatMemoryFactory | None = None,
+        agent_executor_factory: AgentExecutorFactory | None = None,
+        agent_factory: AgentFactory | None = None,
+        agent_llm_chain_factory: LLMChainFactory | None = None,
+        agent_prompt_template_factory: PromptTemplateFactory | None = None,
+        agent_tool_factories: List[AgentToolFactory] = [],
         group: Group | None = None,
         description: str = '',
         inputs: List[AnyInput] = [],
@@ -85,6 +88,7 @@ class PromptTask(AnyPromptTask, Task):
             should_execute=should_execute,
             return_upstream_result=return_upstream_result
         )
+        self._is_agent = is_agent
         self._user_prompt = prompt
         self._system_prompt = system_prompt
         self._history_file_name = history_file
@@ -93,20 +97,39 @@ class PromptTask(AnyPromptTask, Task):
         self._create_chat_model = chat_model_factory
         self._create_chat_prompt_template = chat_prompt_template_factory
         self._create_chat_memory = chat_memory_factory
+        self._agent_executor_factory = agent_executor_factory
+        self._agent_factory = agent_factory
+        self._agent_llm_chain_factory = agent_llm_chain_factory
+        self._agent_prompt_template_factory = agent_prompt_template_factory
+        self._agent_tool_factories = agent_tool_factories
 
     async def run(self, *args: Any, **kwargs: Any) -> Any:
-        chain = self.get_llm_chain()
+        if self.render_bool(self._is_agent):
+            return await self.run_agent_executor(*args, **kwargs)
+        return await self.run_llm_chain(*args, **kwargs)
+
+    async def run_llm_chain(self, *args: Any, **kwargs: Any) -> Any:
+        llm_chain = self.get_llm_chain()
         user_prompt = self.get_rendered_user_prompt()
-        llm_response = chain.run(user_prompt)
+        llm_response = llm_chain.run(question=user_prompt)
         self.save_chat_context(input=user_prompt, output=llm_response)
         print('', file=sys.stderr, flush=True)
         return llm_response
+
+    async def run_agent_executor(self, *args: Any, **kwargs: Any) -> Any:
+        agent = self.get_agent_executor()
+        user_prompt = self.get_rendered_user_prompt()
+        agent_response = agent.run(question=user_prompt)
+        self.save_chat_context(input=user_prompt, output=agent_response)
+        print('', file=sys.stderr, flush=True)
+        return agent_response
 
     @lru_cache(maxsize=1)
     def get_callback_manager(self) -> CallbackManager:
         if self._create_callback_manager is not None:
             return self._create_callback_manager(self)
-        create_callback_manager = make_callback_manager_factory()
+        from ..factory.callback_manager import callback_manager_factory
+        create_callback_manager = callback_manager_factory()
         return create_callback_manager(self)
 
     @lru_cache(maxsize=1)
@@ -114,7 +137,8 @@ class PromptTask(AnyPromptTask, Task):
         if self._create_chat_memory is not None:
             chat_memory = self._create_chat_memory(self)
             return self.load_chat_context_to_memory(chat_memory)
-        create_chat_memory = make_chat_memory_factory()
+        from ..factory.chat_memory import chat_conversation_buffer_memory_factory  # noqa
+        create_chat_memory = chat_conversation_buffer_memory_factory()
         chat_memory = create_chat_memory(self)
         return self.load_chat_context_to_memory(chat_memory)
 
@@ -122,22 +146,68 @@ class PromptTask(AnyPromptTask, Task):
     def get_chat_model(self) -> BaseChatModel:
         if self._create_chat_model is not None:
             return self._create_chat_model(self)
-        create_chat_model = make_chat_model_factory()
+        from ..factory.chat_model import ollama_chat_model_factory
+        create_chat_model = ollama_chat_model_factory()
         return create_chat_model(self)
 
     @lru_cache(maxsize=1)
     def get_chat_prompt_template(self) -> ChatPromptTemplate:
         if self._create_chat_prompt_template is not None:
             return self._create_chat_prompt_template(self)
-        create_chat_prompt_template = make_chat_prompt_template_factory()
+        from ..factory.chat_prompt_template import chat_prompt_template_factory
+        create_chat_prompt_template = chat_prompt_template_factory()
         return create_chat_prompt_template(self)
 
     @lru_cache(maxsize=1)
     def get_llm_chain(self) -> LLMChain:
         if self._llm_chain_factory is not None:
             return self._llm_chain_factory(self)
-        create_llm_chain = make_llm_chain_factory(verbose=False)
+        from ..factory.llm_chain import llm_chain_factory
+        create_llm_chain = llm_chain_factory(verbose=False)
         return create_llm_chain(self)
+
+    @lru_cache(maxsize=1)
+    def get_agent_executor(self) -> AgentExecutor | None:
+        if self._agent_executor_factory is not None:
+            return self._agent_executor_factory(self)
+        from ..factory.agent_executor import agent_executor_factory
+        create_agent_executor = agent_executor_factory()
+        return create_agent_executor(self)
+
+    @lru_cache(maxsize=1)
+    def get_agent(self) -> Agent:
+        if self._agent_factory is not None:
+            return self._agent_factory(self)
+        from ..factory.agent import agent_factory
+        create_agent = agent_factory()
+        return create_agent(self)
+
+    @lru_cache(maxsize=1)
+    def get_agent_llm_chain(self) -> LLMChain:
+        if self._agent_llm_chain_factory is not None:
+            return self._agent_llm_chain_factory(self)
+        from ..factory.agent_llm_chain import agent_llm_chain_factory
+        create_agent_llm_chain = agent_llm_chain_factory(verbose=False)
+        return create_agent_llm_chain(self)
+
+    @lru_cache(maxsize=1)
+    def get_agent_prompt_template(self) -> PromptTemplate:
+        if self._agent_prompt_template_factory is not None:
+            return self._agent_prompt_template_factory(self)
+        from ..factory.agent_prompt_template import agent_prompt_template_factory  # noqa
+        create_agent_prompt_template = agent_prompt_template_factory()
+        return create_agent_prompt_template(self)
+
+    @lru_cache(maxsize=1)
+    def get_agent_tools(self) -> List[Tool]:
+        if len(self._agent_tool_factories) > 0:
+            return [
+                tool_factory(self)
+                for tool_factory in self._agent_tool_factories
+            ]
+        from ..factory.agent_tool import duckduckgo_search_agent_tool_factory
+        create_duckduckgo_search = duckduckgo_search_agent_tool_factory()
+        return [create_duckduckgo_search(self)]
 
     def load_chat_context_to_memory(
         self, memory: BaseChatMemory

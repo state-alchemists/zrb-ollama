@@ -3,14 +3,17 @@ from langchain_core.language_models.chat_models import BaseChatModel
 from langchain.chat_models import ChatOllama, ChatOpenAI
 from .schema import ChatModelFactory
 from ..task.any_prompt_task import AnyPromptTask
-from ..config import DEFAULT_OLLAMA_BASE_URL, DEFAULT_MODEL
+from ..config import DEFAULT_OLLAMA_BASE_URL, DEFAULT_MODEL, OPENAI_API_KEY
 
 
-def openai_chat_model_factory(api_key: str) -> ChatModelFactory:
+def openai_chat_model_factory(
+    api_key: str = OPENAI_API_KEY
+) -> ChatModelFactory:
     def create_openai_chat_model(task: AnyPromptTask) -> BaseChatModel:
         return ChatOpenAI(
             api_key=task.render_str(api_key),
-            callback_manager=task.get_callback_manager()
+            callback_manager=task.get_callback_manager(),
+            streaming=True
         )
     return create_openai_chat_model
 

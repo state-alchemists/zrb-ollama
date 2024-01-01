@@ -1,74 +1,90 @@
-from zrb import Task, python_task
-from zrb.helper.typing import Any, List
-from zrb.helper.accessories.color import colored
 from .builtin.install import install
 from .task.prompt_task import PromptTask
-from .config import DEFAULT_MODEL, DEFAULT_OLLAMA_BASE_URL, VERBOSE_EVAL
-from .factory.chat_model import ollama_chat_model_factory
+from .config import DEFAULT_OLLAMA_BASE_URL, OPENAI_API_KEY
+from .factory.chat_model import (
+    ollama_chat_model_factory, openai_chat_model_factory
+)
 from .factory.chat_memory import chat_conversation_buffer_window_memory_factory
+from .factory.agent_tool import (
+    duckduckgo_search_agent_tool_factory, python_repl_agent_tool_factory
+)
 
 import os
-import subprocess
-import threading
 import sys
 
 _LOCAL_OLLAMA_BASE_URLS = (
     'http://localhost:11434', 'http://0.0.0.0:11434', 'http://127.0.0.1:11434'
 )
 _HOME_DIR = os.path.expanduser('~')
+_AGENT_PROMPT = '''
+You are a Python problem solver known for clear and precise solutions.
+For each problem, follow these steps:
+1. Analyze the problem and devise a Python-based solution.
+2. Conduct brief research if necessary to refine your strategy.
+3. Develop the solution in Python, focusing on functionality and efficiency.
+4. Present your final answer in two distinct parts:
+   a. Solution: A succinct, direct response to the problem.
+   b. Code: The Python code for the solution, with comments for clarity
+   and a print statement to explicitly display the solution.
+
+Example:
+Question: Determine the perimeter of a square with each side measuring 2 cm.
+Final Answer:
+- Solution: The perimeter is 8 cm.
+- Code:
+  ```python
+  # Calculating the perimeter of a square
+  side_length = 2
+  perimeter = side_length * 4
+  # Displaying the solution
+  print(perimeter)
+  ```
+'''
 
 
 def vanilla_prompt():
     user_prompt = _get_user_prompt()
-    prompt_task = _create_prompt_task(prompt=user_prompt)
-    prompt_fn = prompt_task.to_function()
-    prompt_fn()
-
-
-def python_prompt():
-    user_prompt = _get_user_prompt()
-    prompt_task = _create_prompt_task(
-        prompt=user_prompt,
-        system_prompt='\n'.join([
-            "You are a Python code generator.",
-            "Your task is to interpret the user's input as a Python coding task and generate a Python code that fulfills the request.",  # noqa
-            "The code should be ready to run in a Python interpreter without any additional preprocessing.",  # noqa
-            "Focus on generating concise and correct Python code for each task.",  # noqa
-            "Always ensure that the code is safe to run and adheres to Python best practices.",  # noqa
-            "Make sure you only produce Python code, no explanation is needed. Just Python.",  # noqa
-        ]),
-    )
-    eval_task = _create_eval_task(
-        upstreams=[prompt_task],
-        xcom_key='prompt'
-    )
-    eval_fn = eval_task.to_function()
-    eval_fn()
-
-
-def _create_prompt_task(
-    prompt: str = '',
-    system_prompt: str = '',
-) -> Task:
     prompt_task = PromptTask(
         name='prompt',
         icon='🦙',
         color='light_green',
-        prompt=prompt,
-        system_prompt=system_prompt,
-        chat_model_factory=ollama_chat_model_factory(
-            base_url=DEFAULT_OLLAMA_BASE_URL,
-            model=DEFAULT_MODEL,
-        ),
+        prompt=user_prompt,
+        system_prompt='',
+        chat_model_factory=_chat_model_factory(),
         chat_memory_factory=chat_conversation_buffer_window_memory_factory(
             k=3
         ),
-        # llm_chain_factory=llm_chain_factory(verbose=True),
         history_file=os.path.join(_HOME_DIR, '.zrb-ollama-context.json')
     )
-    if DEFAULT_OLLAMA_BASE_URL.rstrip('/') in _LOCAL_OLLAMA_BASE_URLS:
+    if OPENAI_API_KEY == '' and DEFAULT_OLLAMA_BASE_URL.rstrip('/') in _LOCAL_OLLAMA_BASE_URLS:  # noqa
         prompt_task.add_upstream(install)
-    return prompt_task
+    prompt_fn = prompt_task.to_function()
+    prompt_fn()
+
+
+def agent_prompt():
+    user_prompt = _get_user_prompt()
+    prompt_task = PromptTask(
+        name='prompt',
+        icon='🦙',
+        color='light_green',
+        prompt=user_prompt,
+        is_agent=True,
+        system_prompt=_AGENT_PROMPT,
+        chat_model_factory=_chat_model_factory(),
+        chat_memory_factory=chat_conversation_buffer_window_memory_factory(
+            k=3
+        ),
+        agent_tool_factories=[
+            duckduckgo_search_agent_tool_factory(),
+            python_repl_agent_tool_factory()
+        ],
+        history_file=os.path.join(_HOME_DIR, '.zrb-ollama-context.json')
+    )
+    if OPENAI_API_KEY == '' and DEFAULT_OLLAMA_BASE_URL.rstrip('/') in _LOCAL_OLLAMA_BASE_URLS:  # noqa
+        prompt_task.add_upstream(install)
+    prompt_fn = prompt_task.to_function()
+    prompt_fn()
 
 
 def _get_user_prompt():
@@ -77,67 +93,7 @@ def _get_user_prompt():
     return 'Tell me some random fun facts'
 
 
-def _create_eval_task(upstreams: List[Task], xcom_key: str) -> Task:
-    @python_task(
-        name='evaluate',
-        icon='✏️',
-        color='green',
-        upstreams=upstreams,
-        retry=0
-    )
-    def evaluate(*args, **kwargs):
-        task: Task = kwargs.get('_task')
-        python_script = _extract_python_script(task.get_xcom(xcom_key))
-        shown_lines = python_script.split('\n')
-        if VERBOSE_EVAL:
-            task.print_out_dark('\n    '.join(['Evaluating:', *shown_lines]))
-        process = subprocess.Popen(
-            ['python', '-c', python_script],
-            stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True
-        )
-        task.print_out_dark('Waiting for evaluation...')
-        stdout_lines, stderr_lines = [], []
-        stdout_thread = threading.Thread(
-            target=_print_stream, args=(process.stdout, stdout_lines)
-        )
-        stderr_thread = threading.Thread(
-            target=_print_stream, args=(process.stderr, stderr_lines)
-        )
-        stdout_thread.start()
-        stderr_thread.start()
-        process.wait()
-        stdout_thread.join()
-        stderr_thread.join()
-        if process.returncode != 0:
-            raise Exception(f'Non zero exit code: {process.returncode}')
-        return ''.join(stdout_lines)
-    return evaluate
-
-
-def _extract_python_script(response: str) -> str:
-    response = response.lstrip().rstrip()
-    if '```' in response:
-        lines = response.split('\n')
-        is_code = False
-        codes = []
-        for line in lines:
-            if not is_code and (line == '```python' or line == '```'):
-                is_code = True
-                continue
-            if is_code and line == '```':
-                break
-            if is_code:
-                codes.append(line)
-        return '\n'.join(codes)
-    return response
-
-
-def _print_stream(stream: Any, lines: List[str]):
-    while True:
-        line = stream.readline()
-        if not line:
-            break
-        print(
-            colored(line, attrs=['dark']), end='', file=sys.stderr, flush=True
-        )
-        lines.append(line)
+def _chat_model_factory():
+    if OPENAI_API_KEY != '':
+        return openai_chat_model_factory()
+    return ollama_chat_model_factory()
