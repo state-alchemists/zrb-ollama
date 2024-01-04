@@ -5,13 +5,16 @@ from ..task.any_prompt_task import AnyPromptTask
 
 
 def agent_tool_factory(
-    name: str, description: str, func: Callable[..., Any] | None, **kwargs: Any
+    name: str,
+    description: str,
+    func: Callable[..., Any] | None, **kwargs: Any
 ) -> AgentToolFactory:
     def create_agent_tool(task: AnyPromptTask) -> Tool:
         return Tool(
             name=task.render_str(name),
             func=func,
             description=task.render_str(description),
+            handle_tool_error=True,
             **kwargs
         )
     return create_agent_tool
@@ -53,7 +56,9 @@ def python_repl_agent_tool_factory(
     def create_python_repl_agent_tool(task: AnyPromptTask) -> Tool:
         from .helper.python_repl import eval_python
         create_agent_tool = agent_tool_factory(
-            name=name, func=eval_python, description=description
+            name=name,
+            func=eval_python,
+            description=description
         )
         return create_agent_tool(task)
     return create_python_repl_agent_tool

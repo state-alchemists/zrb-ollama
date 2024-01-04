@@ -1,3 +1,4 @@
+from langchain_core.tools import ToolException
 from zrb.helper.typing import Any, List
 from zrb.helper.accessories.color import colored
 
@@ -25,7 +26,7 @@ def eval_python(script: str):
     stdout_thread.join()
     stderr_thread.join()
     if process.returncode != 0:
-        return ''.join(stderr_lines)
+        raise ToolException(''.join(stderr_lines))
     return ''.join(stdout_lines)
 
 
