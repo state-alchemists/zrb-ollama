@@ -201,7 +201,7 @@ class PromptTask(AnyPromptTask, Task):
             from zrb_ollama.factory.tool.search import search_tool_factory
 
             tool_factory = search_tool_factory()
-            tool_factories=[tool_factory]
+            tool_factories = [tool_factory]
         return [factory(self) for factory in tool_factories]
 
     @lru_cache(maxsize=1)
