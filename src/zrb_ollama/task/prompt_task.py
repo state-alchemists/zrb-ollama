@@ -80,6 +80,7 @@ class PromptTask(AnyPromptTask, Task):
         self,
         name: str,
         input_prompt: str,
+        system_prompt: str = "You are a helpful assistant",
         history_file: str = "",
         callback_handler_factories: Iterable[CallbackHandlerFactory] = [],
         tool_factories: Iterable[ToolFactory] = [],
@@ -139,11 +140,12 @@ class PromptTask(AnyPromptTask, Task):
         self._llm_provider = llm_provider
         self._prompt_factory = prompt_factory
         self._input_prompt = input_prompt
+        self._system_prompt = system_prompt
 
     @lru_cache(maxsize=1)
     def get_history_file_name(self) -> str:
         if self._history_file is None:
-            return os.path.expanduser('.zrb-ollama-history.txt')
+            return os.path.expanduser(".zrb-ollama-history.txt")
         return os.path.expanduser(self.render_str(self._history_file))
 
     @lru_cache(maxsize=1)
@@ -162,22 +164,23 @@ class PromptTask(AnyPromptTask, Task):
 
     @lru_cache(maxsize=1)
     def get_llm(self) -> BaseLanguageModel:
-        llm_provider = self.render_str(self._llm_provider)
-        if llm_provider == "ollama":
-            from zrb_ollama.factory.llm.ollama import ollama_llm_factory
+        llm_factory = self._llm_factory
+        if llm_factory is None:
+            llm_provider = self.render_str(self._llm_provider)
+            self.log_info(f"Use LLM Provider: {llm_provider}")
+            if llm_provider == "ollama":
+                from zrb_ollama.factory.llm.ollama import ollama_llm_factory
 
-            llm_factory = ollama_llm_factory()
-            return llm_factory(self)
-        if llm_provider == "openai":
-            from zrb_ollama.factory.llm.openai import openai_llm_factory
+                llm_factory = ollama_llm_factory()
+            if llm_provider == "openai":
+                from zrb_ollama.factory.llm.openai import openai_llm_factory
 
-            llm_factory = openai_llm_factory()
-            return llm_factory(self)
-        if llm_provider == "bedrock":
-            from zrb_ollama.factory.llm.bedrock import bedrock_llm_factory
+                llm_factory = openai_llm_factory()
+            if llm_provider == "bedrock":
+                from zrb_ollama.factory.llm.bedrock import bedrock_llm_factory
 
-            llm_factory = bedrock_llm_factory()
-            return llm_factory(self)
+                llm_factory = bedrock_llm_factory()
+        return llm_factory(self)
 
     @lru_cache(maxsize=1)
     def get_prompt(self) -> BasePromptTemplate:
@@ -185,7 +188,7 @@ class PromptTask(AnyPromptTask, Task):
         if prompt_factory is None:
             from zrb_ollama.factory.prompt import react_prompt_factory
 
-            prompt_factory = react_prompt_factory()
+            prompt_factory = react_prompt_factory(self._system_prompt)
         return prompt_factory(self)
 
     @lru_cache(maxsize=1)
@@ -203,16 +206,16 @@ class PromptTask(AnyPromptTask, Task):
     def get_agent(self) -> Agent:
         return create_react_agent(
             llm=self.get_llm(),
-            prompt=self.get_prompt(),
             tools=self.get_tools(),
+            prompt=self.get_prompt(),
         )
 
     @lru_cache(maxsize=1)
     def get_agent_executor(self) -> AgentExecutor:
         return AgentExecutor(
             agent=self.get_agent(),
-            prompt=self.get_prompt(),
             tools=self.get_tools(),
+            handle_parsing_errors=True,
         )
 
     async def run(self, *args: Any, **kwargs: Any) -> Any:
