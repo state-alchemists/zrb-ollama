@@ -1,7 +1,7 @@
-from zrb import CmdTask, runner, StrInput
-from zrb.builtin.group import plugin_group
-
 import os
+
+from zrb import CmdTask, StrInput, runner
+from zrb.builtin.group import plugin_group
 
 PROJECT_DIR = os.path.dirname(__file__)
 
@@ -10,14 +10,15 @@ PROJECT_DIR = os.path.dirname(__file__)
 ###############################################################################
 
 prepare = CmdTask(
-    name='prepare',
+    name="prepare",
     group=plugin_group,
-    description='Prepare venv for plugin',
+    description="Prepare venv for plugin",
     cwd=PROJECT_DIR,
     cmd_path=[
-        os.path.join(PROJECT_DIR, '_cmd', 'activate-venv.sh'),
-        os.path.join(PROJECT_DIR, '_cmd', 'prepare-venv.sh'),
-    ]
+        os.path.join(PROJECT_DIR, "_cmd", "activate-venv.sh"),
+        os.path.join(PROJECT_DIR, "_cmd", "prepare-venv.sh"),
+        os.path.join(PROJECT_DIR, "_cmd", "format.sh"),
+    ],
 )
 runner.register(prepare)
 
@@ -26,15 +27,15 @@ runner.register(prepare)
 ###############################################################################
 
 build = CmdTask(
-    name='build',
+    name="build",
     group=plugin_group,
-    description='Build plugin',
+    description="Build plugin",
     upstreams=[prepare],
     cwd=PROJECT_DIR,
     cmd_path=[
-        os.path.join(PROJECT_DIR, '_cmd', 'activate-venv.sh'),
-        os.path.join(PROJECT_DIR, '_cmd', 'build.sh'),
-    ]
+        os.path.join(PROJECT_DIR, "_cmd", "activate-venv.sh"),
+        os.path.join(PROJECT_DIR, "_cmd", "build.sh"),
+    ],
 )
 runner.register(build)
 
@@ -43,23 +44,23 @@ runner.register(build)
 ###############################################################################
 
 publish = CmdTask(
-    name='publish',
+    name="publish",
     group=plugin_group,
-    description='Publish plugin',
+    description="Publish plugin",
     inputs=[
         StrInput(
-            name='plugin-repo',
-            prompt='Pypi repository for plugin',
-            description='Pypi repository for human readalbe zrb package name',
-            default='pypi',
+            name="plugin-repo",
+            prompt="Pypi repository for plugin",
+            description="Pypi repository for human readalbe zrb package name",
+            default="pypi",
         )
     ],
     upstreams=[build],
     cwd=PROJECT_DIR,
     cmd_path=[
-        os.path.join(PROJECT_DIR, '_cmd', 'activate-venv.sh'),
-        os.path.join(PROJECT_DIR, '_cmd', 'publish.sh'),
-    ]
+        os.path.join(PROJECT_DIR, "_cmd", "activate-venv.sh"),
+        os.path.join(PROJECT_DIR, "_cmd", "publish.sh"),
+    ],
 )
 runner.register(publish)
 
@@ -68,15 +69,15 @@ runner.register(publish)
 ###############################################################################
 
 install_symlink = CmdTask(
-    name='install-symlink',
+    name="install-symlink",
     group=plugin_group,
-    description='Install plugin as symlink',
+    description="Install plugin as symlink",
     upstreams=[build],
     cwd=PROJECT_DIR,
     cmd_path=[
-        os.path.join(PROJECT_DIR, '_cmd', 'activate-venv.sh'),
-        os.path.join(PROJECT_DIR, '_cmd', 'install-symlink.sh'),
-    ]
+        os.path.join(PROJECT_DIR, "_cmd", "activate-venv.sh"),
+        os.path.join(PROJECT_DIR, "_cmd", "install-symlink.sh"),
+    ],
 )
 runner.register(install_symlink)
 
@@ -85,15 +86,15 @@ runner.register(install_symlink)
 ###############################################################################
 
 prepare_playground = CmdTask(
-    name='prepare-playground',
+    name="prepare-playground",
     group=plugin_group,
-    description='Prepare playground',
+    description="Prepare playground",
     upstreams=[prepare],
     cwd=PROJECT_DIR,
     cmd_path=[
-        os.path.join(PROJECT_DIR, '_cmd', 'activate-venv.sh'),
-        os.path.join(PROJECT_DIR, '_cmd', 'prepare-playground.sh')
-    ]
+        os.path.join(PROJECT_DIR, "_cmd", "activate-venv.sh"),
+        os.path.join(PROJECT_DIR, "_cmd", "prepare-playground.sh"),
+    ],
 )
 runner.register(prepare_playground)
 
@@ -102,11 +103,11 @@ runner.register(prepare_playground)
 ###############################################################################
 
 test_playground = CmdTask(
-    name='test-playground',
+    name="test-playground",
     group=plugin_group,
-    description='Test playground',
+    description="Test playground",
     upstreams=[prepare_playground],
-    cwd=os.path.join(PROJECT_DIR, 'playground'),
-    cmd_path=os.path.join(PROJECT_DIR, '_cmd', 'test-playground.sh'),
+    cwd=os.path.join(PROJECT_DIR, "playground"),
+    cmd_path=os.path.join(PROJECT_DIR, "_cmd", "test-playground.sh"),
 )
 runner.register(test_playground)

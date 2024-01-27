@@ -18,11 +18,13 @@ classifiers = [
 ]
 dependencies = [
   "zrb>=0.4.0",
-  "langchain~=0.0.353",
-  "langchain-community~=0.0.7",
-  "langchain-core~=0.1.4",
-  "duckduckgo_search==4.1.1",
-  "openai~=1.6.1"
+  "langchain~=0.1.0",
+  "langchain-community~=0.0.9",
+  "langchain-core~=0.1.7",
+  "langchain-openai~=0.0.2",
+  "openai~=1.6.1",
+  "duckduckgo_search~=4.1.1",
+  "boto3~=1.34.25",
 ]
  
 
@@ -35,8 +37,7 @@ test = []
 "Bug Tracker" = "https://github.com/gofrendiAsgard/zrb-ollama/issues"
 
 [project.scripts]
-zrb-ollama = "zrb_ollama.__main__:vanilla_prompt"
-zrb-ollama-agent = "zrb_ollama.__main__:agent_prompt"
+zrb-ollama = "zrb_ollama.__main__:prompt"
 
 [tool.pytest.ini_options]
 pythonpath = [

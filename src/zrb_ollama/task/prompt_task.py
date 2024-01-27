@@ -1,29 +1,41 @@
-from functools import lru_cache
-from langchain.callbacks.manager import CallbackManager
-from langchain.chains import LLMChain
-from langchain.memory.chat_memory import BaseChatMemory
-from langchain_core.language_models.chat_models import BaseChatModel
-from langchain.prompts import ChatPromptTemplate, PromptTemplate
-from langchain.agents import Agent, AgentExecutor, Tool
-from zrb.helper.typecheck import typechecked
-from zrb.helper.typing import Any, Callable, Iterable, List, Mapping
-from zrb import (
-    AnyTask, Task, Env, EnvFile, Group, AnyInput,
-    OnFailed, OnReady, OnRetry, OnSkipped, OnStarted, OnTriggered, OnWaiting
-)
-from ..factory.schema import (
-    LLMChainFactory, CallbackManagerFactory, ChatModelFactory,
-    ChatPromptTemplateFactory, ChatMemoryFactory, AgentExecutorFactory,
-    AgentFactory, PromptTemplateFactory, AgentToolFactory
-)
-from .any_prompt_task import AnyPromptTask
-from ..config import OPENAI_API_KEY
-
-import json
 import os
 import sys
+from functools import lru_cache
+
+from langchain.agents import Agent, AgentExecutor, create_react_agent
+from langchain.callbacks.manager import CallbackManager
+from langchain_core.language_models import BaseLanguageModel
+from langchain_core.prompts import BasePromptTemplate
+from langchain_core.tools import BaseTool
+from zrb import (
+    AnyInput,
+    AnyTask,
+    Env,
+    EnvFile,
+    Group,
+    OnFailed,
+    OnReady,
+    OnRetry,
+    OnSkipped,
+    OnStarted,
+    OnTriggered,
+    OnWaiting,
+    Task,
+)
+from zrb.helper.typecheck import typechecked
+from zrb.helper.typing import Any, Callable, Iterable, List, Mapping
+
+from zrb_ollama.config import DEFAULT_LLM_PROVIDER
+from zrb_ollama.factory.schema import (
+    CallbackHandlerFactory,
+    LLMFactory,
+    PromptFactory,
+    ToolFactory,
+)
+from zrb_ollama.task.any_prompt_task import AnyPromptTask
 
 # flake8: noqa E501
+
 
 @typechecked
 class PromptTask(AnyPromptTask, Task):
@@ -33,20 +45,11 @@ class PromptTask(AnyPromptTask, Task):
 
     Attributes:
         name (str): The name of the task.
-        prompt (str): The user prompt for the task.
-        system_prompt (str): An optional system prompt for the task.
         history_file (str | None): Optional file path for storing conversation history.
-        is_agent (str | bool): Flag to determine if the task acts as an agent.
-        llm_chain_factory (LLMChainFactory | None): Factory for creating LLM chains.
-        callback_manager_factory (CallbackManagerFactory | None): Factory for creating callback managers.
-        chat_model_factory (ChatModelFactory | None): Factory for creating chat models.
-        chat_prompt_template_factory (ChatPromptTemplateFactory | None): Factory for creating chat prompt templates.
-        chat_memory_factory (ChatMemoryFactory | None): Factory for creating chat memory.
-        agent_executor_factory (AgentExecutorFactory | None): Factory for creating agent executors.
-        agent_factory (AgentFactory | None): Factory for creating agents.
-        agent_llm_chain_factory (LLMChainFactory | None): Factory for creating agent LLM chains.
-        agent_prompt_template_factory (PromptTemplateFactory | None): Factory for creating agent prompt templates.
-        agent_tool_factories (List[AgentToolFactory]): List of factories for creating agent tools.
+        callback_handler_factories (Iterable[CallbackHandlerFactory]): Factory for creating CallbackHandler.
+        tool_factories (Iterable[ToolFactory]): Factory for creating tools.
+        llm_factory (LLMFactory | None): Factory for creating LLM.
+        prompt_factory (PromptFactory | None): Factory for creating prompt.
         group (Group | None): The group to which this task belongs.
         description (str): Description of the task.
         inputs (List[AnyInput]): List of inputs for the task.
@@ -70,27 +73,21 @@ class PromptTask(AnyPromptTask, Task):
         return_upstream_result (bool): Flag to return the result of upstream tasks.
 
     This class is designed to handle various aspects of prompt-based tasks, including managing
-    chat interactions, executing agents or LLM chains, and handling task-related callbacks and settings.
+    chat interactions and settings.
     """
+
     def __init__(
         self,
         name: str,
-        prompt: str,
-        system_prompt: str = '',
-        history_file: str | None = None,
-        is_agent: str | bool = False,
-        llm_chain_factory: LLMChainFactory | None = None,
-        callback_manager_factory: CallbackManagerFactory | None = None,
-        chat_model_factory: ChatModelFactory | None = None,
-        chat_prompt_template_factory: ChatPromptTemplateFactory | None = None,
-        chat_memory_factory: ChatMemoryFactory | None = None,
-        agent_executor_factory: AgentExecutorFactory | None = None,
-        agent_factory: AgentFactory | None = None,
-        agent_llm_chain_factory: LLMChainFactory | None = None,
-        agent_prompt_template_factory: PromptTemplateFactory | None = None,
-        agent_tool_factories: List[AgentToolFactory] = [],
+        input_prompt: str,
+        history_file: str = "",
+        callback_handler_factories: Iterable[CallbackHandlerFactory] = [],
+        tool_factories: Iterable[ToolFactory] = [],
+        llm_provider: str = DEFAULT_LLM_PROVIDER,
+        llm_factory: LLMFactory | None = None,
+        prompt_factory: PromptFactory | None = None,
         group: Group | None = None,
-        description: str = '',
+        description: str = "",
         inputs: List[AnyInput] = [],
         envs: Iterable[Env] = [],
         env_files: Iterable[EnvFile] = [],
@@ -109,7 +106,7 @@ class PromptTask(AnyPromptTask, Task):
         on_retry: OnRetry | None = None,
         on_failed: OnFailed | None = None,
         should_execute: bool | str | Callable[..., bool] = True,
-        return_upstream_result: bool = False
+        return_upstream_result: bool = False,
     ):
         super().__init__(
             name=name,
@@ -133,181 +130,113 @@ class PromptTask(AnyPromptTask, Task):
             on_retry=on_retry,
             on_failed=on_failed,
             should_execute=should_execute,
-            return_upstream_result=return_upstream_result
+            return_upstream_result=return_upstream_result,
         )
-        self._is_agent = is_agent
-        self._user_prompt = prompt
-        self._system_prompt = system_prompt
-        self._history_file_name = history_file
-        self._llm_chain_factory = llm_chain_factory
-        self._create_callback_manager = callback_manager_factory
-        self._create_chat_model = chat_model_factory
-        self._create_chat_prompt_template = chat_prompt_template_factory
-        self._create_chat_memory = chat_memory_factory
-        self._agent_executor_factory = agent_executor_factory
-        self._agent_factory = agent_factory
-        self._agent_llm_chain_factory = agent_llm_chain_factory
-        self._agent_prompt_template_factory = agent_prompt_template_factory
-        self._agent_tool_factories = agent_tool_factories
+        self._history_file = history_file
+        self._callback_handler_factories = callback_handler_factories
+        self._tool_factories = tool_factories
+        self._llm_factory = llm_factory
+        self._llm_provider = llm_provider
+        self._prompt_factory = prompt_factory
+        self._input_prompt = input_prompt
 
-    async def run(self, *args: Any, **kwargs: Any) -> Any:
-        if self.render_bool(self._is_agent):
-            return await self.run_agent_executor(*args, **kwargs)
-        return await self.run_llm_chain(*args, **kwargs)
-
-    async def run_llm_chain(self, *args: Any, **kwargs: Any) -> Any:
-        llm_chain = self.get_llm_chain()
-        user_prompt = self.get_rendered_user_prompt()
-        llm_response = llm_chain.run(question=user_prompt)
-        self.save_chat_context(input=user_prompt, output=llm_response)
-        print('', file=sys.stderr, flush=True)
-        return llm_response
-
-    async def run_agent_executor(self, *args: Any, **kwargs: Any) -> Any:
-        agent = self.get_agent_executor()
-        user_prompt = self.get_rendered_user_prompt()
-        agent_response = agent.run(question=user_prompt)
-        self.save_chat_context(input=user_prompt, output=agent_response)
-        print('', file=sys.stderr, flush=True)
-        return agent_response
+    @lru_cache(maxsize=1)
+    def get_history_file_name(self) -> str:
+        if self._history_file is None:
+            return os.path.expanduser(self.render_str(self._history_file))
+        return self.render_str(self._history_file)
 
     @lru_cache(maxsize=1)
     def get_callback_manager(self) -> CallbackManager:
-        if self._create_callback_manager is not None:
-            return self._create_callback_manager(self)
-        from ..factory.callback_manager import callback_manager_factory
-        create_callback_manager = callback_manager_factory()
-        return create_callback_manager(self)
+        callback_handler_factories = self._callback_handler_factories
+        if len(callback_handler_factories) == 0:
+            from zrb_ollama.factory.callback_handler import (
+                default_callback_handler_factory,
+            )
 
-    @lru_cache(maxsize=1)
-    def get_chat_memory(self) -> BaseChatMemory:
-        if self._create_chat_memory is not None:
-            chat_memory = self._create_chat_memory(self)
-            return self.load_chat_context_to_memory(chat_memory)
-        from ..factory.chat_memory import chat_conversation_buffer_memory_factory  # noqa
-        create_chat_memory = chat_conversation_buffer_memory_factory()
-        chat_memory = create_chat_memory(self)
-        return self.load_chat_context_to_memory(chat_memory)
-
-    @lru_cache(maxsize=1)
-    def get_chat_model(self) -> BaseChatModel:
-        if self._create_chat_model is not None:
-            return self._create_chat_model(self)
-        from ..factory.chat_model import (
-            ollama_chat_model_factory, openai_chat_model_factory
+            callback_handler_factories = [default_callback_handler_factory()]
+        return CallbackManager(
+            handlers=[factory(self) for factory in callback_handler_factories]
         )
-        if OPENAI_API_KEY != '':
-            create_chat_model = openai_chat_model_factory()
-            return create_chat_model(self)
-        create_chat_model = ollama_chat_model_factory()
-        return create_chat_model(self)
+        pass
 
     @lru_cache(maxsize=1)
-    def get_chat_prompt_template(self) -> ChatPromptTemplate:
-        if self._create_chat_prompt_template is not None:
-            return self._create_chat_prompt_template(self)
-        from ..factory.chat_prompt_template import chat_prompt_template_factory
-        create_chat_prompt_template = chat_prompt_template_factory()
-        return create_chat_prompt_template(self)
+    def get_llm(self) -> BaseLanguageModel:
+        llm_provider = self.render_str(self._llm_provider)
+        if llm_provider == "ollama":
+            from zrb_ollama.factory.llm.ollama import ollama_llm_factory
+
+            llm_factory = ollama_llm_factory()
+            return llm_factory(self)
+        if llm_provider == "openai":
+            from zrb_ollama.factory.llm.openai import openai_llm_factory
+
+            llm_factory = openai_llm_factory()
+            return llm_factory(self)
+        if llm_provider == "bedrock":
+            from zrb_ollama.factory.llm.bedrock import bedrock_llm_factory
+
+            llm_factory = bedrock_llm_factory()
+            return llm_factory(self)
 
     @lru_cache(maxsize=1)
-    def get_llm_chain(self) -> LLMChain:
-        if self._llm_chain_factory is not None:
-            return self._llm_chain_factory(self)
-        from ..factory.llm_chain import llm_chain_factory
-        create_llm_chain = llm_chain_factory(verbose=False)
-        return create_llm_chain(self)
+    def get_prompt(self) -> BasePromptTemplate:
+        prompt_factory = self._prompt_factory
+        if prompt_factory is None:
+            from zrb_ollama.factory.prompt import react_prompt_factory
+
+            prompt_factory = react_prompt_factory()
+        return prompt_factory(self)
 
     @lru_cache(maxsize=1)
-    def get_agent_executor(self) -> AgentExecutor | None:
-        if self._agent_executor_factory is not None:
-            return self._agent_executor_factory(self)
-        from ..factory.agent_executor import agent_executor_factory
-        create_agent_executor = agent_executor_factory()
-        return create_agent_executor(self)
+    def get_tools(self) -> List[BaseTool]:
+        tool_factories = self._tool_factories
+        if len(tool_factories) == 0:
+            from zrb_ollama.factory.tool.python_repl import python_repl_tool_factory
+            from zrb_ollama.factory.tool.search import search_tool_factory
+
+            factories = [python_repl_tool_factory(), search_tool_factory()]
+            return [factory(self) for factory in factories]
+        return tool_factories
 
     @lru_cache(maxsize=1)
     def get_agent(self) -> Agent:
-        if self._agent_factory is not None:
-            return self._agent_factory(self)
-        from ..factory.agent import agent_factory
-        create_agent = agent_factory()
-        return create_agent(self)
+        return create_react_agent(
+            llm=self.get_llm(),
+            prompt=self.get_prompt(),
+            tools=self.get_tools(),
+        )
 
     @lru_cache(maxsize=1)
-    def get_agent_llm_chain(self) -> LLMChain:
-        if self._agent_llm_chain_factory is not None:
-            return self._agent_llm_chain_factory(self)
-        from ..factory.agent_llm_chain import agent_llm_chain_factory
-        create_agent_llm_chain = agent_llm_chain_factory(verbose=False)
-        return create_agent_llm_chain(self)
+    def get_agent_executor(self) -> AgentExecutor:
+        return AgentExecutor(
+            agent=self.get_agent(),
+            prompt=self.get_prompt(),
+            tools=self.get_tools(),
+        )
 
-    @lru_cache(maxsize=1)
-    def get_agent_prompt_template(self) -> PromptTemplate:
-        if self._agent_prompt_template_factory is not None:
-            return self._agent_prompt_template_factory(self)
-        from ..factory.agent_prompt_template import agent_prompt_template_factory  # noqa
-        create_agent_prompt_template = agent_prompt_template_factory()
-        return create_agent_prompt_template(self)
+    async def run(self, *args: Any, **kwargs: Any) -> Any:
+        chat_history = self._get_chat_history()
+        input_prompt = self.render_str(self._input_prompt)
+        agent_executor = self.get_agent_executor()
+        result = agent_executor.invoke(
+            {
+                "input": input_prompt,
+                "chat_history": chat_history,
+            }
+        )
+        ai_output = result["output"]
+        print("", file=sys.stderr)
+        print("", file=sys.stderr)
+        print(ai_output, file=sys.stderr, flush=True)
 
-    @lru_cache(maxsize=1)
-    def get_agent_tools(self) -> List[Tool]:
-        if len(self._agent_tool_factories) > 0:
-            return [
-                tool_factory(self)
-                for tool_factory in self._agent_tool_factories
-            ]
-        from ..factory.agent_tool import duckduckgo_search_agent_tool_factory
-        create_duckduckgo_search = duckduckgo_search_agent_tool_factory()
-        return [create_duckduckgo_search(self)]
+    def _get_chat_history(self) -> str:
+        if os.path.isfile(self.get_history_file_name()):
+            with open(self.get_history_file_name(), "r") as history_file:
+                return history_file.read()
+        return ""
 
-    def load_chat_context_to_memory(
-        self, memory: BaseChatMemory
-    ) -> BaseChatMemory:
-        conversations = self.get_chat_context()
-        if conversations is None:
-            return memory
-        for conversation in conversations:
-            chat_input = conversation.get('input')
-            chat_output = conversation.get('output')
-            memory.save_context(
-                {'input': chat_input}, {'output': chat_output}
-            )
-        return memory
-
-    @lru_cache(maxsize=1)
-    def save_chat_context(self, input: Any, output: Any):
-        history_file_name = self.get_rendered_history_file_name()
-        if history_file_name is None:
-            return
-        conversations = self.get_chat_context()
-        if conversations is None:
-            conversations: List[Mapping[str, Mapping[str, Any]]] = []
-        conversations.append({
-            'input': input,
-            'output': output
-        })
-        with open(history_file_name, 'w') as file:
-            file.write(json.dumps(conversations))
-
-    @lru_cache(maxsize=1)
-    def get_chat_context(self) -> List[Mapping[str, Mapping[str, Any]]] | None:
-        history_file_name = self.get_rendered_history_file_name()
-        if history_file_name is None or not os.path.isfile(history_file_name):
-            return None
-        with open(history_file_name, 'r') as file:
-            return json.loads(file.read())
-
-    @lru_cache(maxsize=1)
-    def get_rendered_history_file_name(self) -> str | None:
-        if self._history_file_name is None:
-            return None
-        return os.path.expanduser(self.render_str(self._history_file_name))
-
-    @lru_cache(maxsize=1)
-    def get_rendered_user_prompt(self) -> Any:
-        return self.render_str(self._user_prompt)
-
-    @lru_cache(maxsize=1)
-    def get_rendered_system_prompt(self) -> str:
-        return self.render_str(self._system_prompt)
+    def _save_chat_history(self, input_prompt: str, ai_output: str):
+        with open(self.get_history_file_name(), "a") as history_file:
+            history_file.write(f"Human: {input_prompt}\n")
+            history_file.write(f"Assistant: {ai_output}\n")
