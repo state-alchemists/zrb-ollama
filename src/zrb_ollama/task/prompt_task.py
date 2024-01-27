@@ -144,9 +144,12 @@ class PromptTask(AnyPromptTask, Task):
 
     @lru_cache(maxsize=1)
     def get_history_file_name(self) -> str:
-        if self._history_file is None:
-            return os.path.expanduser(".zrb-ollama-history.txt")
-        return os.path.expanduser(self.render_str(self._history_file))
+        history_file = self._history_file
+        if history_file == "":
+            history_file = os.path.join("~", ".zrb-ollama-history.txt")
+        rendered_history_file = os.path.expanduser(self.render_str(history_file))
+        self.log_info(f"History file: {rendered_history_file}")
+        return rendered_history_file
 
     @lru_cache(maxsize=1)
     def get_callback_manager(self) -> CallbackManager:
@@ -195,12 +198,11 @@ class PromptTask(AnyPromptTask, Task):
     def get_tools(self) -> List[BaseTool]:
         tool_factories = self._tool_factories
         if len(tool_factories) == 0:
-            from zrb_ollama.factory.tool.python_repl import python_repl_tool_factory
             from zrb_ollama.factory.tool.search import search_tool_factory
 
-            factories = [python_repl_tool_factory(), search_tool_factory()]
-            return [factory(self) for factory in factories]
-        return tool_factories
+            tool_factory = search_tool_factory()
+            tool_factories=[tool_factory]
+        return [factory(self) for factory in tool_factories]
 
     @lru_cache(maxsize=1)
     def get_agent(self) -> Agent:
@@ -232,6 +234,7 @@ class PromptTask(AnyPromptTask, Task):
         print("", file=sys.stderr)
         print("", file=sys.stderr)
         print(ai_output, file=sys.stderr, flush=True)
+        self._save_chat_history(input_prompt=input_prompt, ai_output=ai_output)
 
     def _get_chat_history(self) -> str:
         if os.path.isfile(self.get_history_file_name()):

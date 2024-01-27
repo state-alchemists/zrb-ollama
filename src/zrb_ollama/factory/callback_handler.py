@@ -12,7 +12,7 @@ from zrb_ollama.task.any_prompt_task import AnyPromptTask
 class _DefaultCallbackHandler(StreamingStdOutCallbackHandler):
     def __init__(self) -> None:
         super().__init__()
-        self._is_first_token = False
+        self._is_first_token = True
 
     def on_llm_new_token(self, token: str, **kwargs: Any) -> None:
         shown_text = "\n    ".join(token.split("\n"))

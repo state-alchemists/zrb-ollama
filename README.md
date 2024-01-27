@@ -25,9 +25,12 @@ You can, however, change this behavior by setting `OPENAI_API_KEY`. When `OPENAI
 
 You can configure Zrb Ollama using a few environment variables:
 
-- `OPENAI_API_KEY`: If set, Zrb-ollama will use OpenAI instead of Ollama.
+- `ZRB_DEFAULT_LLM_PROVIDER`: LLM Provider (i.e., `ollama`, `openai`, `bedrock`). If not specified, Zrb Ollama will use `ollama`
 - `ZRB_OLLAMA_BASE_URL`: Default Ollama base URL. If not specified, Zrb Ollama will use `http://localhost:11434`.
 - `ZRB_OLLAMA_DEFAULT_MODEL`: Default Ollama model. If not specified, Zrb Ollama will use `mistral`.
+- `OPENAI_API_KEY`
+- `AWS_ACCESS_KEY`
+- `AWS_SECRET_ACCESS_KEY`
 
 # Talk to Zrb Ollama
 
@@ -97,6 +100,7 @@ Let's see the following example:
 
 # or you can use Open AI:
 export OPENAI_API_KEY=your-api-key
+export DEFAULT_LLM_PROVIDER=openai
 
 zrb-ollama-agent "What is the area of a square with 20 cm perimeter?"
 ```
@@ -182,20 +186,11 @@ runner.register(agent)
 Each PrompTask has the following properties:
 
 - `name (str)`: The name of the task.
-- `prompt (str)`: The user prompt for the task.
-- `system_prompt (str)`: An optional system prompt for the task.
 - `history_file (str | None)`: Optional file path for storing conversation history.
-- `is_agent (str | bool)`: Flag to determine if the task acts as an agent.
-- `llm_chain_factory (LLMChainFactory | None)`: Factory for creating LLM chains.
-- `callback_manager_factory (CallbackManagerFactory | None)`: Factory for creating callback managers.
-- `chat_model_factory (ChatModelFactory | None)`: Factory for creating chat models.
-- `chat_prompt_template_factory (ChatPromptTemplateFactory | None)`: Factory for creating chat prompt templates.
-- `chat_memory_factory (ChatMemoryFactory | None)`: Factory for creating chat memory.
-- `agent_executor_factory (AgentExecutorFactory | None)`: Factory for creating agent executors.
-- `agent_factory (AgentFactory | None)`: Factory for creating agents.
-- `agent_llm_chain_factory (LLMChainFactory | None)`: Factory for creating agent LLM chains.
-- `agent_prompt_template_factory (PromptTemplateFactory | None)`: Factory for creating agent prompt templates.
-- `agent_tool_factories (List[AgentToolFactory])`: List of factories for creating agent tools.
+- `callback_handler_factories (Iterable[CallbackHandlerFactory])`: Factory for creating CallbackHandler.
+- `tool_factories (Iterable[ToolFactory])`: Factory for creating tools.
+- `llm_factory (LLMFactory | None)`: Factory for creating LLM.
+- `prompt_factory (PromptFactory | None)`: Factory for creating prompt.
 - `group (Group | None)`: The group to which this task belongs.
 - `description (str)`: Description of the task.
 - `inputs (List[AnyInput])`: List of inputs for the task.
@@ -223,57 +218,54 @@ Each PrompTask has the following properties:
 To understand what factories are for, first, we need to see what a LangChain program looks like:
 
 ```python
+import os
+import sys
 from typing import Any
-from langchain.chat_models import ChatOllama, ChatOpenAI
-from langchain.callbacks.manager import CallbackManager
-from langchain.callbacks.streaming_stdout import (
-    StreamingStdOutCallbackHandler
-)
-from langchain.memory import ConversationBufferMemory
-from langchain.chains import LLMChain
-from langchain.prompts import (
-    ChatPromptTemplate, HumanMessagePromptTemplate, MessagesPlaceholder,
-    SystemMessagePromptTemplate
-)
+
+from langchain import hub
+from langchain.agents import AgentExecutor, Tool, create_react_agent
+from langchain_community.chat_models import ChatOllama
+from langchain_community.utilities.duckduckgo_search import DuckDuckGoSearchAPIWrapper
+from langchain.prompts import PromptTemplate
+
+
+tools = [
+    Tool(
+        name="Search",
+        func=DuckDuckGoSearchAPIWrapper().run,
+        description="Search engine to answer questions about current events",
+    )
+]
+
+prompt = hub.pull("hwchase17/react-chat")
 
 llm = ChatOllama(
-    model="mistral:cpu",
-    callback_manager=CallbackManager([StreamingStdOutCallbackHandler()]),
+    model="mistral",
     temperature=0.9,
 )
 
-prompt = ChatPromptTemplate(
-    messages=[
-        SystemMessagePromptTemplate.from_template('You always answers confidently.'),
-        MessagesPlaceholder(variable_name="chat_history"),
-        HumanMessagePromptTemplate.from_template("{question}"),
-    ]
+agent = create_react_agent(llm=llm, tools=tools, prompt=prompt)
+
+agent_executor = AgentExecutor(
+    agent=agent,
+    tools=tools,
+    handle_parsing_errors=True,
 )
 
-memory = ConversationBufferMemory(
-    memory_key='chat_history', return_messages=True
+result = agent_executor.invoke(
+    {
+        # "input": "Who am I?",
+        "input": "How many people live in Canada right now?",
+        "chat_history": "Human: Hi! My name is Bob\nAI: Hello Bob! Nice to meet you",
+    }
 )
-
-memory.save_context(
-    {'input': 'Why is the sky blue?'},
-    {'output': 'The sky appears blue due to a phenomenon called Rayleigh scattering.'}
-)
-
-llm_chain = LLMChain(
-    llm=llm,
-    prompt=prompt,
-    memory=memory,
-    verbose=False
-)
-
-result = llm_chain.run(question='Why is the sky blue?')
 ```
 
-You can see a lot of things going on. But let's focus on the `llm_chain`. You can see that you need a few other components to create a `llm_chain`:
+You can see a lot of things going on. But let's focus on the `agent`. You can see that you need a few other components to create an `agent`:
 
 - `llm`
+- `tools`
 - `prompt`
-- `memory`
 
 LangChain allows you to swap the component with anything if the interface matches. For example, you can use bot `OpenAIChat` and `OllamaChat` as `llm`.
 
@@ -282,18 +274,36 @@ PromptTask handles this by allowing you to define how to create elements based o
 ```python
 class PromptTask(AnyPromptTask, BaseTask):
     def __init__(
-        self, user_prompt, llm_factory, prompt_factory, memory_factory, llm_chain_factory
+        self, user_prompt, llm_factory, prompt_factory, tool_factories
     ):
         self.user_prompt = user_prompt
         self.llm_factory = llm_factory
         self.prompt_factory = prompt_factory
-        self.memory_factory = memory_factory
-        self.llm_chain_factory = llm_chain_factory
+        self.tool_factories = tool_factories
     
     def run():
-        llm_chain = self.get_llm_chain()
-        return llm_chain.run(question=self.user_prompt) 
+        agent = self.get_agent()
+        agent_executor = AgentExecutor(
+            agent=agent,
+            tools=self.get_tools(),
+            handle_parsing_errors=True,
+        )
+        result = agent_executor.invoke(
+            {
+                # "input": "Who am I?",
+                "input": "How many people live in Canada right now?",
+                "chat_history": "Human: Hi! My name is Bob\nAI: Hello Bob! Nice to meet you",
+            }
+        )
+        return result["output"]
     
+    def get_agent(self):
+        return Agent(
+            llm=self.get_llm(),
+            prompt=self.get_prompt(),
+            tools=self.get_tools(),
+        )
+
     @lru_cache(maxsize=1)
     def get_llm(self):
         return self.llm_factory(self) 
@@ -303,15 +313,14 @@ class PromptTask(AnyPromptTask, BaseTask):
         return self.prompt_factory(self)
 
     @lru_cache(maxsize=1)
-    def get_memory(self):
-        return self.memory_factory(self)
-
-    @lru_cache(maxsize=1)
-    def get_llm_chain(self):
-        return self.llm_chain_factory(self)
+    def get_tools(self):
+        return [
+            tool_factory(self)
+            for tool_factory in self.llm_chain_factories
+        ]
 ```
 
-Now, you can control how `get_llm`, `get_prompt`, `get_memory`, and `get_llm_chain` behave by setting up the factory properties.
+Now, you can control how `get_llm`, `get_prompt`, and `get_tools` behave by setting up the factory properties.
 
 The `lru_cache` also ensures that the getter method will only be called once or less, so you won't lose reference to the components (i.e., when you call `get_llm` twice, the result will refer to the same object).
 
@@ -339,38 +348,42 @@ def openai_llm_factory(api_key, temperature):
         ) 
     return create_openai_llm
 
-def llm_chain_factory(verbose):
-    def create_llm_chain(task):
-        return LLMChain(
-            llm=task.get_llm(),
-            prompt=task.get_prompt(),
-            memory=task.get_memory(),
-            verbose=verbose
-        )
-    return create_llm_chain
-
 
 prompt_task = PromptTask(
     user_prompt='Why is the sky blue?',
     llm_factory=ollama_llm_factory(),
     # ...
-    llm_chain_factory=llm_chain_factory()
 )
 ```
 
-We will see how things work in details, by focusing on `PromptTask`'s `run`, `get_llm_chain`, and `get_llm` method.
+We will see how things work in detail by focusing on `PromptTask`'s `run`, `get_agent`, and `get_llm` methods.
 
 ```python
 class PromptTask(AnyPromptTask, BaseTask):
     # ...
+ 
+    def run(self):
+        agent = self.get_agent()
+        agent_executor = AgentExecutor(
+            agent=agent,
+            tools=self.get_tools(),
+            handle_parsing_errors=True,
+        )
+        result = agent_executor.invoke(
+            {
+                # "input": "Who am I?",
+                "input": "How many people live in Canada right now?",
+                "chat_history": "Human: Hi! My name is Bob\nAI: Hello Bob! Nice to meet you",
+            }
+        )
+        return result["output"]
 
-    def run():
-        llm_chain = self.get_llm_chain()
-        return llm_chain.run(question=self.user_prompt) 
-   
-    @lru_cache(maxsize=1)
-    def get_llm_chain(self):
-        return self.llm_chain_factory(self) 
+    def get_agent(self):
+        return Agent(
+            llm=self.get_llm(),
+            prompt=self.get_prompt(),
+            tools=self.get_tools(),
+        )
 
     @lru_cache(maxsize=1)
     def get_llm(self):
@@ -380,21 +393,6 @@ class PromptTask(AnyPromptTask, BaseTask):
 ```
 
 When Zrb calls `prompt_task.run()`, PromptTask will invoke `get_llm_chain` to get the `llm_chain`.
-
-When The Python interpreter calls `prompt_task.get_llm_chain()` for the first time, it will invoke `self.llm_chain_factory(self)`.
-
-In this case, it will run this piece of code:
-
-```python
-LLMChain(
-    llm=task.get_llm(),
-    prompt=task.get_prompt(),
-    memory=task.get_memory(),
-    verbose=verbose
-)
-```
-
-You can see that while LLMChain factory created the LLMChain, it asks the task to make `llm`, `prompt`, and `memory`. The process continues until all the necessary components are ready.
 
 ### The Advantage
 
