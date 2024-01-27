@@ -143,8 +143,8 @@ class PromptTask(AnyPromptTask, Task):
     @lru_cache(maxsize=1)
     def get_history_file_name(self) -> str:
         if self._history_file is None:
-            return os.path.expanduser(self.render_str(self._history_file))
-        return self.render_str(self._history_file)
+            return os.path.expanduser('.zrb-ollama-history.txt')
+        return os.path.expanduser(self.render_str(self._history_file))
 
     @lru_cache(maxsize=1)
     def get_callback_manager(self) -> CallbackManager:
