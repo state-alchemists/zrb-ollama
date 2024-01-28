@@ -161,24 +161,14 @@ Let's see an example:
 
 ```python
 from zrb import runner
-from zrb_ollama import PromptTask, ollama_chat_model_factory
 
-# A simple chat task
+from zrb_ollama import PromptTask
+
 chat = PromptTask(
-    name='chat',
-    prompt='echo {{ " ".join(input._args) if input._args | length > 0 else "tell me some fun fact" }}',  # noqa
-    system_prompt='You are a code tutor. You eager to explain code in a very detail manner',  # noqa
+    name="chat",
+    input_prompt='echo {{ " ".join(input._args) if input._args | length > 0 else "tell me some fun fact" }}',  # noqa
 )
 runner.register(chat)
-
-# A simple agent task, by default the agent will be able to access Duckduckgo search. More on this later.
-agent = PromptTask(
-    name='agent',
-    prompt='echo {{ " ".join(input._args) if input._args | length > 0 else "tell me some fun fact" }}',  # noqa
-    system_prompt='You are a code tutor. You eager to explain code in a very detail manner',  # noqa
-    is_agent=True
-)
-runner.register(agent)
 ```
 
 ## PromptTask Properties

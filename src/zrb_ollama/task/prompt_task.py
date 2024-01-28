@@ -25,7 +25,7 @@ from zrb import (
 from zrb.helper.typecheck import typechecked
 from zrb.helper.typing import Any, Callable, Iterable, List, Mapping
 
-from zrb_ollama.config import DEFAULT_LLM_PROVIDER
+from zrb_ollama.config import DEFAULT_LLM_PROVIDER, DEFAULT_SYSTEM_PROMPT
 from zrb_ollama.factory.schema import (
     CallbackHandlerFactory,
     LLMFactory,
@@ -80,7 +80,7 @@ class PromptTask(AnyPromptTask, Task):
         self,
         name: str,
         input_prompt: str,
-        system_prompt: str = "You are a helpful assistant",
+        system_prompt: str = DEFAULT_SYSTEM_PROMPT,
         history_file: str = "",
         callback_handler_factories: Iterable[CallbackHandlerFactory] = [],
         tool_factories: Iterable[ToolFactory] = [],
