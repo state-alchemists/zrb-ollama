@@ -170,18 +170,20 @@ class PromptTask(AnyPromptTask, Task):
         llm_factory = self._llm_factory
         if llm_factory is None:
             llm_provider = self.render_str(self._llm_provider)
-            self.log_info(f"Use LLM Provider: {llm_provider}")
             if llm_provider == "ollama":
                 from zrb_ollama.factory.llm.ollama import ollama_llm_factory
 
+                self.log_info("Use LLM Provider: Ollama")
                 llm_factory = ollama_llm_factory()
             if llm_provider == "openai":
                 from zrb_ollama.factory.llm.openai import openai_llm_factory
 
+                self.log_info("Use LLM Provider: OpenAI")
                 llm_factory = openai_llm_factory()
             if llm_provider == "bedrock":
                 from zrb_ollama.factory.llm.bedrock import bedrock_llm_factory
 
+                self.log_info("Use LLM Provider: Bedrock")
                 llm_factory = bedrock_llm_factory()
         return llm_factory(self)
 
@@ -192,7 +194,9 @@ class PromptTask(AnyPromptTask, Task):
             from zrb_ollama.factory.prompt import react_prompt_factory
 
             prompt_factory = react_prompt_factory(self._system_prompt)
-        return prompt_factory(self)
+        prompt = prompt_factory(self)
+        self.log_info(f"Prompt Template: {prompt}")
+        return prompt
 
     @lru_cache(maxsize=1)
     def get_tools(self) -> List[BaseTool]:

@@ -11,24 +11,24 @@ from zrb_ollama.factory.schema import ToolFactory
 from zrb_ollama.task.any_prompt_task import AnyPromptTask
 
 
-def python_repl_tool_factory(
-    name: str = "python_repl",
-    description: str = "Use this to execute or test python code. Input should be a valid python code.",  # noqa
+def bash_repl_tool_factory(
+    name: str = "bash_repl",
+    description: str = "Use this to execute or test bash script. Input should be a valid bash script.",  # noqa
 ) -> ToolFactory:
-    def create_python_repl_tool(task: AnyPromptTask) -> BaseTool:
+    def create_bash_repl_tool(task: AnyPromptTask) -> BaseTool:
         return Tool(
             name=task.render_str(name),
             description=task.render_str(description),
-            func=_eval_python,
+            func=_eval_bash,
         )
 
-    return create_python_repl_tool
+    return create_bash_repl_tool
 
 
-def _eval_python(script: str):
-    sanitized_python_script = _sanitize_python_script(script)
+def _eval_bash(script: str):
+    sanitized_bash_script = _sanitize_bash_script(script)
     process = subprocess.Popen(
-        ["python", "-c", sanitized_python_script],
+        ["bash", "-c", sanitized_bash_script],
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         text=True,
@@ -50,21 +50,21 @@ def _eval_python(script: str):
     return "".join(stdout_lines)
 
 
-def _sanitize_python_script(script: str) -> str:
-    script = _sanitize_multiline_python_script(script)
+def _sanitize_bash_script(script: str) -> str:
+    script = _sanitize_multiline_bash_script(script)
     if "\n" in script and script[0] == "`" and script[-1] == "`":
         return script[1:-1]
     return script
 
 
-def _sanitize_multiline_python_script(script: str) -> str:
+def _sanitize_multiline_bash_script(script: str) -> str:
     script = script.lstrip().rstrip()
     if "```" in script:
         lines = script.split("\n")
         is_code = False
         script_lines = []
         for line in lines:
-            if not is_code and (line == "```python" or line == "```"):
+            if not is_code and line in ["```bash", "```sh", "```"]:
                 is_code = True
                 continue
             if is_code and line == "```":

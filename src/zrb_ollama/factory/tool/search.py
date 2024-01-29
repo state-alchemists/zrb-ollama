@@ -8,11 +8,11 @@ from zrb_ollama.task.any_prompt_task import AnyPromptTask
 
 def search_tool_factory(
     name: str = "Search",
-    description="Search engine to answer questions about current events",
+    description="Use this tool to lookup information from search engine. Input should be the query.",  # noqa
     region: str | None = "wt-wt",
-    safesearch: str = "moderate",
+    safesearch: str = "off",
     time: str | None = "y",
-    max_results: int = 5,
+    max_results: int = 10,
     backend: str = "api",
     source: str = "text",
 ) -> ToolFactory:
