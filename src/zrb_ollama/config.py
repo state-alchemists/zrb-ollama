@@ -8,7 +8,8 @@ DEFAULT_SYSTEM_PROMPT = os.getenv(
     "\n".join(
         [
             "You are a helpful assistant."
-            "You always validate and give a correct information. You never give fake information.",
+            "You always validate and give a correct information.",
+            "You never give fake information at all cost.",
             "You also include necessary details, reasoning, and explanation in your Final Answer.",  # noqa
         ]
     ),

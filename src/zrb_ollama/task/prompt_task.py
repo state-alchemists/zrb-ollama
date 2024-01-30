@@ -170,11 +170,6 @@ class PromptTask(AnyPromptTask, Task):
         llm_factory = self._llm_factory
         if llm_factory is None:
             llm_provider = self.render_str(self._llm_provider)
-            if llm_provider == "ollama":
-                from zrb_ollama.factory.llm.ollama import ollama_llm_factory
-
-                self.log_info("Use LLM Provider: Ollama")
-                llm_factory = ollama_llm_factory()
             if llm_provider == "openai":
                 from zrb_ollama.factory.llm.openai import openai_llm_factory
 
@@ -185,6 +180,12 @@ class PromptTask(AnyPromptTask, Task):
 
                 self.log_info("Use LLM Provider: Bedrock")
                 llm_factory = bedrock_llm_factory()
+
+            if llm_factory is None:
+                from zrb_ollama.factory.llm.ollama import ollama_llm_factory
+
+                self.log_info("Use LLM Provider: Ollama")
+                llm_factory = ollama_llm_factory()
         return llm_factory(self)
 
     @lru_cache(maxsize=1)
