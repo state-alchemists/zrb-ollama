@@ -4,7 +4,8 @@ from langchain.text_splitter import CharacterTextSplitter
 from langchain.tools.retriever import create_retriever_tool
 from langchain_community.document_loaders import TextLoader
 from langchain_community.vectorstores import FAISS
-from langchain_core.tools import BaseTool, Embeddings
+from langchain_core.embeddings import Embeddings
+from langchain_core.tools import BaseTool
 
 from zrb_ollama.factory.schema import ToolFactory
 from zrb_ollama.task.any_prompt_task import AnyPromptTask

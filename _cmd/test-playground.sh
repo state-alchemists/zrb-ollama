@@ -1,4 +1,3 @@
 source .venv/bin/activate
-zrb chat "Please explain the following Python script: $(cat fibo.py)"
-zrb chat "Can you make it better?"
-zrb chat
+export ZRB_DEFAULT_LLM_PROVIDER=openai
+zrb chat "In the state of the union, What did the president say about Ketanji Brown Jackson"

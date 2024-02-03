@@ -4,7 +4,7 @@ build-backend = "flit_core.buildapi"
 
 [project]
 name = "zrb-ollama"
-version = "0.0.18"
+version = "0.0.19"
 authors = [
   { name="goFrendiAsgard", email="gofrendiasgard@gmail.com" },
 ]
