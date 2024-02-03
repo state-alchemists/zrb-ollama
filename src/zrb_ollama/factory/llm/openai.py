@@ -1,5 +1,7 @@
+from typing import Any, Dict
+
 from langchain_core.language_models import BaseLanguageModel
-from langchain_openai import ChatOpenAI
+from langchain_openai import OpenAI
 
 from zrb_ollama.config import OPENAI_API_KEY
 from zrb_ollama.factory.schema import LLMFactory
@@ -7,13 +9,34 @@ from zrb_ollama.task.any_prompt_task import AnyPromptTask
 
 
 def openai_llm_factory(
-    api_key=OPENAI_API_KEY,
-    temperature=0,
+    model: str = "gpt-3.5-turbo-instruct",
+    temperature: str | float = 0.0,
+    max_tokens: str | int = 256,
+    top_p: str | float = 1.0,
+    frequency_penalty: str | float = 0.0,
+    presence_penalty: str | float = 0.0,
+    n: str | int = 1,
+    best_of: str | int = 1,
+    model_kwargs: Dict[str, Any] = {},
+    api_key: str | None = OPENAI_API_KEY,
+    base_url: str | None = None,
 ) -> LLMFactory:
     def create_openai_llm(task: AnyPromptTask) -> BaseLanguageModel:
-        return ChatOpenAI(
-            api_key=task.render_str(api_key),
-            temperature=task.render_int(temperature),
+        return OpenAI(
+            model=task.render_str(model),
+            temperature=task.render_float(temperature),
+            max_tokens=task.render_int(max_tokens),
+            top_p=task.render_float(top_p),
+            frequency_penalty=task.render_float(frequency_penalty),
+            presence_penalty=task.render_float(presence_penalty),
+            n=task.render_int(n),
+            best_of=task.render_int(best_of),
+            model_kwargs={
+                task.render_str(key): task.render_any(value)
+                for key, value in model_kwargs.items()
+            },
+            api_key=task.render_any(api_key),
+            base_url=task.render_any(base_url),
             streaming=True,
             callback_manager=task.get_callback_manager(),
         )

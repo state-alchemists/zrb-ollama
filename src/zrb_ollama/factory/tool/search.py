@@ -7,7 +7,7 @@ from zrb_ollama.task.any_prompt_task import AnyPromptTask
 
 
 def search_tool_factory(
-    name: str = "Search",
+    name: str = "Search Engine",
     description="Use this tool to lookup information from search engine. Input should be the query.",  # noqa
     region: str | None = "wt-wt",
     safesearch: str = "off",

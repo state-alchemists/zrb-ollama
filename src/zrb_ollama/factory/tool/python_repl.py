@@ -12,7 +12,7 @@ from zrb_ollama.task.any_prompt_task import AnyPromptTask
 
 
 def python_repl_tool_factory(
-    name: str = "python_repl",
+    name: str = "Python REPL",
     description: str = "Use this to execute or test python code. Input should be a valid python code.",  # noqa
 ) -> ToolFactory:
     def create_python_repl_tool(task: AnyPromptTask) -> BaseTool:

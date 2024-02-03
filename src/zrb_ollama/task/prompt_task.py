@@ -25,7 +25,11 @@ from zrb import (
 from zrb.helper.typecheck import typechecked
 from zrb.helper.typing import Any, Callable, Iterable, List, Mapping
 
-from zrb_ollama.config import DEFAULT_LLM_PROVIDER, DEFAULT_SYSTEM_PROMPT
+from zrb_ollama.config import (
+    DEFAULT_CHAT_HISTORY_RETENTION,
+    DEFAULT_LLM_PROVIDER,
+    DEFAULT_SYSTEM_PROMPT,
+)
 from zrb_ollama.factory.schema import (
     CallbackHandlerFactory,
     LLMFactory,
@@ -82,6 +86,7 @@ class PromptTask(AnyPromptTask, Task):
         input_prompt: str,
         system_prompt: str = DEFAULT_SYSTEM_PROMPT,
         history_file: str = "",
+        chat_history_retention: int = DEFAULT_CHAT_HISTORY_RETENTION,
         callback_handler_factories: Iterable[CallbackHandlerFactory] = [],
         tool_factories: Iterable[ToolFactory] = [],
         llm_provider: str = DEFAULT_LLM_PROVIDER,
@@ -141,6 +146,7 @@ class PromptTask(AnyPromptTask, Task):
         self._prompt_factory = prompt_factory
         self._input_prompt = input_prompt
         self._system_prompt = system_prompt
+        self._chat_history_retention = chat_history_retention
 
     @lru_cache(maxsize=1)
     def get_history_file_name(self) -> str:
@@ -163,7 +169,6 @@ class PromptTask(AnyPromptTask, Task):
         return CallbackManager(
             handlers=[factory(self) for factory in callback_handler_factories]
         )
-        pass
 
     @lru_cache(maxsize=1)
     def get_llm(self) -> BaseLanguageModel:
@@ -196,7 +201,6 @@ class PromptTask(AnyPromptTask, Task):
 
             prompt_factory = react_prompt_factory(self._system_prompt)
         prompt = prompt_factory(self)
-        self.log_info(f"Prompt Template: {prompt}")
         return prompt
 
     @lru_cache(maxsize=1)
@@ -229,6 +233,8 @@ class PromptTask(AnyPromptTask, Task):
         chat_history = self._get_chat_history()
         input_prompt = self.render_str(self._input_prompt)
         agent_executor = self.get_agent_executor()
+        self.log_info(f"Input: {input_prompt}")
+        self.log_info(f"Chat History: {chat_history}")
         result = agent_executor.invoke(
             {
                 "input": input_prompt,
@@ -244,7 +250,17 @@ class PromptTask(AnyPromptTask, Task):
     def _get_chat_history(self) -> str:
         if os.path.isfile(self.get_history_file_name()):
             with open(self.get_history_file_name(), "r") as history_file:
-                return history_file.read()
+                all_history = history_file.read()
+                lines = all_history.split("\n")
+                if len(lines) == 0:
+                    return ""
+                human_count = 0
+                for i in range(len(lines) - 1, -1, -1):
+                    if lines[i].startswith("Human:"):
+                        human_count += 1
+                    if human_count == self._chat_history_retention:
+                        return "\n".join(lines[i:])
+                return all_history
         return ""
 
     def _save_chat_history(self, input_prompt: str, ai_output: str):

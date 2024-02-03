@@ -12,7 +12,7 @@ from zrb_ollama.task.any_prompt_task import AnyPromptTask
 
 
 def bash_repl_tool_factory(
-    name: str = "bash_repl",
+    name: str = "Bash REPL",
     description: str = "Use this to execute or test bash script. Input should be a valid bash script.",  # noqa
 ) -> ToolFactory:
     def create_bash_repl_tool(task: AnyPromptTask) -> BaseTool:

@@ -1,2 +1,0 @@
-duckduckgo_search==4.1.1
-openai==1.6.1

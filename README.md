@@ -26,6 +26,8 @@ You can, however, change this behavior by setting `OPENAI_API_KEY`. When `OPENAI
 You can configure Zrb Ollama using a few environment variables:
 
 - `ZRB_DEFAULT_LLM_PROVIDER`: LLM Provider (i.e., `ollama`, `openai`, `bedrock`). If not specified, Zrb Ollama will use `ollama`
+- `ZRB_DEFAULT_SYSTEM_PROMPT` Default system prompt
+- `ZRB_DEFAULT_CHAT_HISTORY_RETENTION`: Default: 3
 - `ZRB_OLLAMA_BASE_URL`: Default Ollama base URL. If not specified, Zrb Ollama will use `http://localhost:11434`.
 - `ZRB_OLLAMA_DEFAULT_MODEL`: Default Ollama model. If not specified, Zrb Ollama will use `mistral`.
 - `OPENAI_API_KEY`
