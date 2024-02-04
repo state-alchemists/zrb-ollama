@@ -23,7 +23,9 @@ def rag_tool_factory(
     def create_rag_tool(task: AnyPromptTask) -> BaseTool:
         rendered_doc_dir_path = task.render_str(doc_dir_path)
         rendered_db_dir_path = task.render_str(db_dir_path)
-        if _get_latest_mtime(rendered_doc_dir_path) > _get_latest_mtime(rendered_db_dir_path):
+        doc_mtime = _get_latest_mtime(rendered_doc_dir_path)
+        db_mtime = _get_latest_mtime(rendered_db_dir_path)
+        if doc_mtime > db_mtime:
             _embed_docs(
                 doc_dir_path=rendered_doc_dir_path,
                 db_dir_path=rendered_db_dir_path,
@@ -31,7 +33,9 @@ def rag_tool_factory(
                 chunk_size=task.render_int(chunk_size),
                 chunk_overlap=task.render_int(chunk_overlap),
             )
-        retriever = _get_retriever(db_dir_path=rendered_db_dir_path, embeddings=embeddings)
+        retriever = _get_retriever(
+            db_dir_path=rendered_db_dir_path, embeddings=embeddings
+        )
         return create_retriever_tool(
             retriever=retriever,
             name=task.render_str(name),
