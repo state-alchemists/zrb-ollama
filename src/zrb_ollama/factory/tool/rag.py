@@ -17,25 +17,39 @@ def rag_tool_factory(
     doc_dir_path: str,
     db_dir_path: str,
     embeddings: Embeddings,
-    chunk_size: int = 1000,
-    chunk_overlap: int = 0,
+    chunk_size: str | int = 1000,
+    chunk_overlap: str | int = 0,
 ) -> ToolFactory:
     def create_rag_tool(task: AnyPromptTask) -> BaseTool:
-        _embed_docs(
-            doc_dir_path=doc_dir_path,
-            db_dir_path=db_dir_path,
-            embeddings=embeddings,
-            chunk_size=chunk_size,
-            chunk_overlap=chunk_overlap,
-        )
-        retriever = _get_retriever(db_dir_path=db_dir_path, embeddings=embeddings)
+        rendered_doc_dir_path = task.render_str(doc_dir_path)
+        rendered_db_dir_path = task.render_str(db_dir_path)
+        if _get_latest_mtime(rendered_doc_dir_path) > _get_latest_mtime(rendered_db_dir_path):
+            _embed_docs(
+                doc_dir_path=rendered_doc_dir_path,
+                db_dir_path=rendered_db_dir_path,
+                embeddings=embeddings,
+                chunk_size=task.render_int(chunk_size),
+                chunk_overlap=task.render_int(chunk_overlap),
+            )
+        retriever = _get_retriever(db_dir_path=rendered_db_dir_path, embeddings=embeddings)
         return create_retriever_tool(
             retriever=retriever,
-            name=name,
-            description=description,
+            name=task.render_str(name),
+            description=task.render_str(description),
         )
 
     return create_rag_tool
+
+
+def _get_latest_mtime(dir_path) -> float:
+    latest_mtime = 0
+    for root, _, files in os.walk(dir_path):
+        for name in files:
+            filepath = os.path.join(root, name)
+            mtime = os.path.getmtime(filepath)
+            if mtime > latest_mtime:
+                latest_mtime = mtime
+    return latest_mtime
 
 
 def _get_retriever(
