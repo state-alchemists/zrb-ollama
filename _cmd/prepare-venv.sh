@@ -1,3 +1,3 @@
 echo "Install packages"
-pip install -r requirements.txt
-
+poetry install --only main
+poetry install -E openai -E bedrock -E embedding-cpu
