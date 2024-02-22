@@ -17,7 +17,7 @@ langchain = "~0.1.5"
 langchain-community = "~0.0.17"
 langchain-core = "~0.1.18"
 requests = "~2.31.0"
-beautifulsoup4 = "4.12.3"
+beautifulsoup4 = "~4.12.3"
 readability-lxml = "~0.8.1"
 langchain-openai = {version = "~0.0.5", optional = true}
 openai = {version = "~1.10.0", optional = true}
