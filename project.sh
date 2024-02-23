@@ -45,7 +45,7 @@ reload() {
     log_progress 'Install'
     poetry install --only main
     log_progress 'Install extras'
-    poetry install -E openai -E bedrock -E embedding-cpu
+    poetry install -E openai -E bedrock -E mistralai -E embedding-cpu
 
     _CURRENT_SHELL=$(ps -p $$ | awk 'NR==2 {print $4}')
     case "$_CURRENT_SHELL" in
