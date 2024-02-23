@@ -19,7 +19,7 @@ def _should_install_ollama() -> bool:
             text=True,
         )
         return False
-    except subprocess.CalledProcessError:
+    except (IOError, OSError, subprocess.CalledProcessError):
         return True
 
 

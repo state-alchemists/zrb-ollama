@@ -13,6 +13,7 @@ keywords = []
 [tool.poetry.dependencies]
 python = ">=3.10.0,<4.0.0"
 zrb = ">=0.4.0"
+filelock = "~3.13.1" # we need to add filelock here to avoid it being uninstalled by extra dependencies
 langchain = "~0.1.5"
 langchain-community = "~0.0.17"
 langchain-core = "~0.1.18"

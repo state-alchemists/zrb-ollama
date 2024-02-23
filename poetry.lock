@@ -653,7 +653,7 @@ files = [
 name = "filelock"
 version = "3.13.1"
 description = "A platform independent file lock."
-optional = true
+optional = false
 python-versions = ">=3.8"
 files = [
     {file = "filelock-3.13.1-py3-none-any.whl", hash = "sha256:57dbda9b35157b05fb3e58ee91448612eb674172fab98ee235ccb0b5bee19a1c"},
@@ -2853,4 +2853,4 @@ openai = ["langchain-openai", "openai"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.10.0,<4.0.0"
-content-hash = "9705fed724a3b2ecb8128990e7834a921519f97dc6bb9f90e82341673613c765"
+content-hash = "1ab578798aa7de07f9c4846340818125e2795b8b6e7d03a23ed9b6b858b6711b"
