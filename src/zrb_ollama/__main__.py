@@ -13,7 +13,7 @@ from .task.prompt_task import PromptTask
 def prompt():
     while True:
         _print_dark("/bye to quit")
-        _print_dark("Enter your input, end with two consecutive new-line character:")
+        _print_dark("Enter your input, end with two consecutive new-line character (i.e. \\n\\n):")
         input_prompt = _get_input_prompt()
         if input_prompt.strip() == "/bye":
             return
