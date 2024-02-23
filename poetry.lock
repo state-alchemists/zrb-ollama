@@ -2853,4 +2853,4 @@ openai = ["langchain-openai", "openai"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.10.0,<4.0.0"
-content-hash = "9705fed724a3b2ecb8128990e7834a921519f97dc6bb9f90e82341673613c765"
+content-hash = "b98ed9ced61a2d4613b7aada706227909cd57e46943d24423652e983a5c56af4"
