@@ -1,5 +1,13 @@
 #!/bin/bash
 
+if [ -n "$PREFIX" ] && [ "$PREFIX" = "/data/data/com.termux/files/usr" ]
+then
+    IS_TERMUX=1
+else
+    IS_TERMUX=0
+fi
+
+
 log_progress() {
     echo -e "🤖 \e[0;33m${1}\e[0;0m"
 }
@@ -17,7 +25,7 @@ init() {
     then
         log_progress 'Install poetry'
         pip install --upgrade pip setuptools
-        pip install "poetry==1.7.1"
+        pip install "poetry"
     fi
     if [ ! -d "${PROJECT_DIR}/.venv" ]
     then
@@ -40,10 +48,23 @@ reload() {
     log_progress 'Loading project configuration (.env)'
     source "${PROJECT_DIR}/.env"
 
+    if [ "$IS_TERMUX" = "1" ]
+    then
+        log_progress 'Updating Build Flags'
+        _OLD_CFLAGS="$CFLAGS"
+        export CFLAGS="$_OLD_CFLAGS -Wno-incompatible-function-pointer-types" # ruamel.yaml need this.
+    fi
+
     log_progress 'Install'
     poetry install --only main
     log_progress 'Install extras'
     poetry install -E openai -E bedrock -E mistralai -E embedding-cpu
+
+    if [ "$IS_TERMUX" = "1" ]
+    then
+        log_progress 'Restoring Build Flags'
+        export CFLAGS="$_OLD_CFLAGS"
+    fi
 
     _CURRENT_SHELL=$(ps -p $$ | awk 'NR==2 {print $4}')
     case "$_CURRENT_SHELL" in
