@@ -52,7 +52,9 @@ reload() {
     then
         log_progress 'Updating Build Flags'
         _OLD_CFLAGS="$CFLAGS"
-        export CFLAGS="$_OLD_CFLAGS -Wno-incompatible-function-pointer-types" # ruamel.yaml need this.
+        export CFLAGS="$_OLD_CFLAGS -Wno-incompatible-function-pointer-types -O0" # ruamel.yaml need this.
+        export CFLAGS="$CFLAGS -U__ANDROID_API__ -D__ANDROID_API__=31"        _OLD_MATHLIB="$MATHLIB"
+        export MATHLIB="m"
     fi
 
     log_progress 'Install'
@@ -64,6 +66,7 @@ reload() {
     then
         log_progress 'Restoring Build Flags'
         export CFLAGS="$_OLD_CFLAGS"
+        export MATHLIB="$_OLD_MATHLIB"
     fi
 
     _CURRENT_SHELL=$(ps -p $$ | awk 'NR==2 {print $4}')
