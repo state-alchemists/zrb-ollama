@@ -50,23 +50,36 @@ reload() {
 
     if [ "$IS_TERMUX" = "1" ]
     then
+        log_progress 'Install required pip packages to build numpy'
+        pip install setuptools wheel packaging pyproject_metadata cython meson-python versioneer
         log_progress 'Updating Build Flags'
         _OLD_CFLAGS="$CFLAGS"
         export CFLAGS="$_OLD_CFLAGS -Wno-incompatible-function-pointer-types -O0" # ruamel.yaml need this.
-        export CFLAGS="$CFLAGS -U__ANDROID_API__ -D__ANDROID_API__=31"        _OLD_MATHLIB="$MATHLIB"
+        export CFLAGS="$CFLAGS -U__ANDROID_API__ -D__ANDROID_API__=31"      
+        _OLD_MATHLIB="$MATHLIB"
         export MATHLIB="m"
+        _OLD_LDFLAGS="$LDFLAGS"
+        export LDFLAGS="-lpython$(python --version | awk '{print $2}' | cut -d. -f1,2)"
     fi
 
     log_progress 'Install'
     poetry install --only main
     log_progress 'Install extras'
-    poetry install -E openai -E bedrock -E mistralai -E embedding-cpu
+    if [ "$IS_TERMUX" = "1" ]
+    then
+        poetry install -E openai -E bedrock -E mistralai
+    else
+        poetry install -E openai -E bedrock -E mistralai -E embedding-cpu
+    fi
 
     if [ "$IS_TERMUX" = "1" ]
     then
+        log_progress 'Reinstall numpy'
+        pip install --no-build-isolation --no-cache-dir numpy
         log_progress 'Restoring Build Flags'
         export CFLAGS="$_OLD_CFLAGS"
         export MATHLIB="$_OLD_MATHLIB"
+        export LDFLAGS="$_OLDLDFLAGS"
     fi
 
     _CURRENT_SHELL=$(ps -p $$ | awk 'NR==2 {print $4}')
