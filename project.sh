@@ -75,7 +75,7 @@ reload() {
         log_progress 'Install required pip packages to build numpy'
         pip install setuptools wheel packaging pyproject_metadata cython meson-python versioneer
         log_progress 'Reinstall numpy'
-        pip uninstall numpy
+        pip uninstall -y numpy
         pip install --no-build-isolation --no-cache-dir numpy
         log_progress 'Restoring Build Flags'
         export CFLAGS="$_OLD_CFLAGS"
