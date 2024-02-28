@@ -61,8 +61,6 @@ reload() {
     fi
 
     log_progress 'Install'
-    poetry install --only main
-    log_progress 'Install extras'
     if [ "$IS_TERMUX" = "1" ]
     then
         poetry install -E openai -E bedrock -E mistralai

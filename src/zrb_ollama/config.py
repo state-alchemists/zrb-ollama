@@ -16,8 +16,12 @@ DEFAULT_SYSTEM_PROMPT = os.getenv(
     ),
 )
 
-DEFAULT_OLLAMA_BASE_URL = os.getenv("ZRB_OLLAMA_BASE_URL", "http://localhost:11434")
-DEFAULT_OLLAMA_MODEL = os.getenv("ZRB_OLLAMA_DEFAULT_MODEL", "mistral:7b-instruct")
+DEFAULT_OLLAMA_BASE_URL = os.getenv(
+    "ZRB_OLLAMA_BASE_URL", "http://localhost:11434"
+)
+DEFAULT_OLLAMA_MODEL = os.getenv(
+    "ZRB_OLLAMA_DEFAULT_MODEL", "mistral:7b-instruct"
+)
 
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
 MISTRAL_API_KEY = os.getenv("MISTRAL_API_KEY", "")
