@@ -11,6 +11,10 @@ from .task.prompt_task import PromptTask
 
 
 def prompt():
+    if len(sys.argv) > 1:
+        input_prompt = " ".join(sys.argv[1:])
+        _exec_prompt(input_prompt)
+        return
     _print_all_instructions()
     is_multiline = False
     lines = []

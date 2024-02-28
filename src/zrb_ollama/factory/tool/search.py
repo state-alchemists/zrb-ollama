@@ -14,20 +14,27 @@ from zrb_ollama.task.any_prompt_task import AnyPromptTask
 
 def search_tool_factory(
     name: str = "Search Engine",
-    description: str ="Use this tool to lookup information from search engine. Input should be the query.",  # noqa
-    max_results: str | int = 5
+    description: str = "Use this tool to lookup information from search engine. Input should be the query.",  # noqa
+    max_results: str | int = 5,
+    max_char_length: str | int = 1000
 ) -> ToolFactory:
     def create_search_tool(task: AnyPromptTask) -> BaseTool:
         return Tool(
             name=task.render_str(name),
             description=task.render_str(description),
-            func=_create_search_duckduckgo(max_results=task.render_int(max_results)),
+            func=_create_search_duckduckgo(
+                max_results=task.render_int(max_results),
+                max_char_length=task.render_int(max_char_length)
+            ),
         )
 
     return create_search_tool
 
 
-def _create_search_duckduckgo(max_results: int) -> Callable[[str], str]:
+def _create_search_duckduckgo(
+    max_results: int,
+    max_char_length: int,
+) -> Callable[[str], str]:
     def search_duckduckgo(keyword: str) -> str:
         headers = {
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"  # noqa
@@ -39,21 +46,22 @@ def _create_search_duckduckgo(max_results: int) -> Callable[[str], str]:
         if response.status_code == 200:
             soup = BeautifulSoup(response.content, "html.parser")
             result_urls = [a["href"] for a in soup.select(".result__a")]
-            results = []
             result_count = 0
+            return_value = ""
             for url in result_urls:
-                if result_count >= max_results:
+                if result_count >= max_results or len(return_value) >= max_char_length:  # noqa
                     break
                 main_content = _extract_main_content(url, headers)
+                print(colored(f"Fetching URL: {url}", attrs=["dark"]))
                 if main_content != "":
                     print(
                         colored(main_content, attrs=["dark"]),
                         file=sys.stderr,
                         flush=True,
                     )
-                    results.append(main_content)
+                    return_value = f"{return_value}\n{main_content}"
                     result_count += 1
-            return "\n".join(results)
+            return return_value[:max_char_length]
         else:
             raise Exception("Failed to search DuckDuckGo.")
     return search_duckduckgo
@@ -68,8 +76,7 @@ def _extract_main_content(url: str, headers: Mapping[str, str]):
             summary = doc.summary()
             # Convert summary (HTML content) to text if needed
             soup_summary = BeautifulSoup(summary, "html.parser")
-            text_summary = soup_summary.get_text().strip()
-            return f"Content from {url}:\n{text_summary}"
+            return soup_summary.get_text().strip()
         return ""
     except Exception:
         return ""
