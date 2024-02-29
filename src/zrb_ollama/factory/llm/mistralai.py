@@ -8,7 +8,7 @@ from zrb_ollama.task.any_prompt_task import AnyPromptTask
 
 def mistralai_llm_factory(
     api_key: str | None = MISTRAL_API_KEY,
-    model: str = "mistral-medium",
+    model: str = "mistral-large-2402",
     temperature: str | float = 0.0,
     max_tokens: str | int = 256,
     top_p: str | float = 1.0,
