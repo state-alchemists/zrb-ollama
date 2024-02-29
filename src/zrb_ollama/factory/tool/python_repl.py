@@ -20,6 +20,7 @@ def python_repl_tool_factory(
             name=task.render_str(name),
             description=task.render_str(description),
             func=_eval_python,
+            handle_tool_error=True,
         )
 
     return create_python_repl_tool

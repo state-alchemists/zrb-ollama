@@ -20,6 +20,7 @@ def bash_repl_tool_factory(
             name=task.render_str(name),
             description=task.render_str(description),
             func=_eval_bash,
+            handle_tool_error=True,
         )
 
     return create_bash_repl_tool

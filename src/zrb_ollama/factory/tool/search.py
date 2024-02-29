@@ -16,7 +16,7 @@ def search_tool_factory(
     name: str = "Search Engine",
     description: str = "Use this tool to lookup information from search engine. Input should be the query.",  # noqa
     max_results: str | int = 5,
-    max_char_length: str | int = 1000
+    max_char_length: str | int = 10000
 ) -> ToolFactory:
     def create_search_tool(task: AnyPromptTask) -> BaseTool:
         return Tool(
@@ -26,6 +26,7 @@ def search_tool_factory(
                 max_results=task.render_int(max_results),
                 max_char_length=task.render_int(max_char_length)
             ),
+            handle_tool_error=True,
         )
 
     return create_search_tool

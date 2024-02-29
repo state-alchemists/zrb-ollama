@@ -23,7 +23,7 @@ from zrb import (
     Task,
 )
 from zrb.helper.typecheck import typechecked
-from zrb.helper.typing import Any, Callable, Iterable, List, Mapping
+from zrb.helper.typing import Any, Callable, Iterable, List
 
 from zrb_ollama.config import (
     DEFAULT_CHAT_HISTORY_RETENTION,
@@ -153,7 +153,9 @@ class PromptTask(AnyPromptTask, Task):
         history_file = self._history_file
         if history_file == "":
             history_file = os.path.join("~", ".zrb-ollama-history.txt")
-        rendered_history_file = os.path.expanduser(self.render_str(history_file))
+        rendered_history_file = os.path.expanduser(
+            self.render_str(history_file)
+        )
         self.log_info(f"History file: {rendered_history_file}")
         return rendered_history_file
 
@@ -176,7 +178,7 @@ class PromptTask(AnyPromptTask, Task):
         if llm_factory is None:
             llm_provider = self.render_str(self._llm_provider)
             if llm_provider == "mistralai":
-                from zrb_ollama.factory.llm.mistralai import mistralai_llm_factory
+                from zrb_ollama.factory.llm.mistralai import mistralai_llm_factory  # noqa
 
                 self.log_info("Use LLM Provider: MistralAI")
                 llm_factory = mistralai_llm_factory()
@@ -231,7 +233,7 @@ class PromptTask(AnyPromptTask, Task):
         return AgentExecutor(
             agent=self.get_agent(),
             tools=self.get_tools(),
-            handle_parsing_errors=True,
+            handle_parsing_errors="Check your output and make sure it conforms",
         )
 
     async def run(self, *args: Any, **kwargs: Any) -> Any:
