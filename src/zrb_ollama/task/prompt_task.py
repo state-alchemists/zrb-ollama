@@ -153,9 +153,7 @@ class PromptTask(AnyPromptTask, Task):
         history_file = self._history_file
         if history_file == "":
             history_file = os.path.join("~", ".zrb-ollama-history.txt")
-        rendered_history_file = os.path.expanduser(
-            self.render_str(history_file)
-        )
+        rendered_history_file = os.path.expanduser(self.render_str(history_file))
         self.log_info(f"History file: {rendered_history_file}")
         return rendered_history_file
 
@@ -178,7 +176,9 @@ class PromptTask(AnyPromptTask, Task):
         if llm_factory is None:
             llm_provider = self.render_str(self._llm_provider)
             if llm_provider == "mistralai":
-                from zrb_ollama.factory.llm.mistralai import mistralai_llm_factory  # noqa
+                from zrb_ollama.factory.llm.mistralai import (
+                    mistralai_llm_factory,
+                )  # noqa
 
                 self.log_info("Use LLM Provider: MistralAI")
                 llm_factory = mistralai_llm_factory()

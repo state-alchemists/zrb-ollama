@@ -1,5 +1,5 @@
 import sys
-from typing import Mapping, Callable
+from typing import Callable, Mapping
 
 import requests
 from bs4 import BeautifulSoup
@@ -16,7 +16,7 @@ def search_tool_factory(
     name: str = "Search Engine",
     description: str = "Use this tool to lookup information from search engine. Input should be the query.",  # noqa
     max_results: str | int = 5,
-    max_char_length: str | int = 10000
+    max_char_length: str | int = 10000,
 ) -> ToolFactory:
     def create_search_tool(task: AnyPromptTask) -> BaseTool:
         return Tool(
@@ -24,7 +24,7 @@ def search_tool_factory(
             description=task.render_str(description),
             func=_create_search_duckduckgo(
                 max_results=task.render_int(max_results),
-                max_char_length=task.render_int(max_char_length)
+                max_char_length=task.render_int(max_char_length),
             ),
             handle_tool_error=True,
         )
@@ -50,7 +50,9 @@ def _create_search_duckduckgo(
             result_count = 0
             return_value = ""
             for url in result_urls:
-                if result_count >= max_results or len(return_value) >= max_char_length:  # noqa
+                if (
+                    result_count >= max_results or len(return_value) >= max_char_length
+                ):  # noqa
                     break
                 main_content = _extract_main_content(url, headers)
                 print(colored(f"Fetching URL: {url}", attrs=["dark"]))
@@ -65,6 +67,7 @@ def _create_search_duckduckgo(
             return return_value[:max_char_length]
         else:
             raise Exception("Failed to search DuckDuckGo.")
+
     return search_duckduckgo
 
 
@@ -81,4 +84,3 @@ def _extract_main_content(url: str, headers: Mapping[str, str]):
         return ""
     except Exception:
         return ""
-

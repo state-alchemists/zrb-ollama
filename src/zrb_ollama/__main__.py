@@ -21,19 +21,19 @@ def prompt():
     while True:
         line = _get_line(show_input_prompt=not is_multiline)
         if is_multiline:
-            if line.lower() == '/end':
+            if line.lower() == "/end":
                 is_multiline = False
                 input_prompt = "\n".join(lines)
                 _exec_prompt(input_prompt)
                 continue
             lines.append(line)
             continue
-        if line.lower() in ['/bye', '/quit', '/q', '/exit']:
+        if line.lower() in ["/bye", "/quit", "/q", "/exit"]:
             return
-        if line.lower() in ['/?', '/help']:
+        if line.lower() in ["/?", "/help"]:
             _print_all_instructions()
             continue
-        if line.lower() in ['/multi', '/multiline']:
+        if line.lower() in ["/multi", "/multiline"]:
             is_multiline = True
             lines = []
             continue
@@ -73,12 +73,15 @@ def _print_all_instructions():
 
 
 def _print_instruction(instruction: str, description: str):
-    print("\t".join([
-        colored(f' {instruction}', color='yellow', attrs=["dark"]),
-        colored(description, attrs=["dark"])
-    ]))
+    print(
+        "\t".join(
+            [
+                colored(f" {instruction}", color="yellow", attrs=["dark"]),
+                colored(description, attrs=["dark"]),
+            ]
+        )
+    )
 
 
 def _print_dark(text: str):
     print(colored(text, attrs=["dark"]))
-
