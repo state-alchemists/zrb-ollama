@@ -13,7 +13,7 @@ def react_prompt_factory(system_prompt: str = DEFAULT_SYSTEM_PROMPT) -> PromptFa
                 [
                     task.render_str(system_prompt),
                     "",
-                    "# Tools",
+                    "# TOOLS",
                     "You have access to the following tools:",
                     "{tools}",
                     "",
@@ -24,7 +24,6 @@ def react_prompt_factory(system_prompt: str = DEFAULT_SYSTEM_PROMPT) -> PromptFa
                     "Thought: Do I need to use a tool? Yes",
                     "Action: the action to take, should be one of [{tool_names}]",
                     "Action Input: the input to the action",
-                    "",
                     "Observation: the result of the action",
                     "```",
                     "",
