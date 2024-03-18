@@ -63,9 +63,9 @@ reload() {
     log_progress 'Install'
     if [ "$IS_TERMUX" = "1" ]
     then
-        poetry install -E openai -E bedrock -E mistralai
+        poetry install -E openai -E bedrock
     else
-        poetry install -E openai -E bedrock -E mistralai -E embedding-cpu
+        poetry install -E openai -E bedrock -E embedding-cpu
     fi
 
     if [ "$IS_TERMUX" = "1" ]

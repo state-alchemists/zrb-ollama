@@ -175,13 +175,6 @@ class PromptTask(AnyPromptTask, Task):
         llm_factory = self._llm_factory
         if llm_factory is None:
             llm_provider = self.render_str(self._llm_provider)
-            if llm_provider == "mistralai":
-                from zrb_ollama.factory.llm.mistralai import (
-                    mistralai_llm_factory,
-                )  # noqa
-
-                self.log_info("Use LLM Provider: MistralAI")
-                llm_factory = mistralai_llm_factory()
             if llm_provider == "openai":
                 from zrb_ollama.factory.llm.openai import openai_llm_factory
 
