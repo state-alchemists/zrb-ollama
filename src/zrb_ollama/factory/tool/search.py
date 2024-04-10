@@ -5,7 +5,7 @@ import requests
 from bs4 import BeautifulSoup
 from langchain.agents import Tool
 from langchain_core.tools import BaseTool
-from readability import Document  # Corrected import statement
+from readability import Document
 from zrb.helper.accessories.color import colored
 
 from ...task.any_prompt_task import AnyPromptTask
