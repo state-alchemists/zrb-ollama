@@ -3,9 +3,9 @@ from typing import Any, Dict
 from langchain_core.language_models import BaseLanguageModel
 from langchain_openai import OpenAI
 
-from zrb_ollama.config import OPENAI_API_KEY
-from zrb_ollama.factory.schema import LLMFactory
-from zrb_ollama.task.any_prompt_task import AnyPromptTask
+from ...config import OPENAI_API_KEY
+from ...task.any_prompt_task import AnyPromptTask
+from ..schema import LLMFactory
 
 
 def openai_llm_factory(

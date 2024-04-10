@@ -3,9 +3,9 @@ from typing import List
 from langchain_community.llms.ollama import Ollama
 from langchain_core.language_models import BaseLanguageModel
 
-from zrb_ollama.config import DEFAULT_OLLAMA_BASE_URL, DEFAULT_OLLAMA_MODEL
-from zrb_ollama.factory.schema import LLMFactory
-from zrb_ollama.task.any_prompt_task import AnyPromptTask
+from ...config import DEFAULT_OLLAMA_BASE_URL, DEFAULT_OLLAMA_MODEL
+from ...task.any_prompt_task import AnyPromptTask
+from ..schema import LLMFactory
 
 
 def ollama_llm_factory(

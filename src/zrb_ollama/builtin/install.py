@@ -3,7 +3,7 @@ import subprocess
 
 from zrb import CmdTask, runner
 
-from zrb_ollama.group import ollama_group
+from ..group import ollama_group
 
 CURRENT_DIR = os.path.dirname(__file__)
 CMD_PATH = os.path.join(CURRENT_DIR, "cmd")
@@ -23,7 +23,7 @@ def _should_install_ollama() -> bool:
         return True
 
 
-install = CmdTask(
+install_ollama = CmdTask(
     name="install",
     group=ollama_group,
     cmd="curl https://ollama.ai/install.sh | sh",
@@ -31,4 +31,4 @@ install = CmdTask(
     should_execute=_should_install_ollama(),
 )
 
-runner.register(install)
+runner.register(install_ollama)

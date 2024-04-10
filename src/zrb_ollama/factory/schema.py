@@ -4,7 +4,7 @@ from langchain_core.prompts import BasePromptTemplate
 from langchain_core.tools import BaseTool
 from zrb.helper.typing import Callable
 
-from zrb_ollama.task.any_prompt_task import AnyPromptTask
+from ..task.any_prompt_task import AnyPromptTask
 
 CallbackHandlerFactory = Callable[[AnyPromptTask], BaseCallbackHandler]
 LLMFactory = Callable[[AnyPromptTask], BaseLanguageModel]

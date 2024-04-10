@@ -7,8 +7,8 @@ from langchain_core.tools import BaseTool, ToolException
 from zrb.helper.accessories.color import colored
 from zrb.helper.typing import Any, List
 
-from zrb_ollama.factory.schema import ToolFactory
-from zrb_ollama.task.any_prompt_task import AnyPromptTask
+from ...task.any_prompt_task import AnyPromptTask
+from ..schema import ToolFactory
 
 
 def bash_repl_tool_factory(

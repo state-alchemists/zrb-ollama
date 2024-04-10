@@ -2,7 +2,7 @@ import sys
 
 from zrb.helper.accessories.color import colored
 
-from .builtin.install import install
+from .builtin.install import install_ollama
 from .config import DEFAULT_LLM_PROVIDER
 from .factory.tool.bash_repl import bash_repl_tool_factory
 from .factory.tool.python_repl import python_repl_tool_factory
@@ -59,7 +59,7 @@ def _exec_prompt(input_prompt: str):
         ],
     )
     if DEFAULT_LLM_PROVIDER == "ollama":
-        prompt_task.add_upstream(install)
+        prompt_task.add_upstream(install_ollama)
     _print_dark("Processing your input...")
     prompt_fn = prompt_task.to_function()
     prompt_fn()

@@ -5,8 +5,8 @@ from langchain_core.callbacks.base import BaseCallbackHandler
 from zrb.helper.accessories.color import colored
 from zrb.helper.typing import Any
 
-from zrb_ollama.factory.schema import CallbackHandlerFactory
-from zrb_ollama.task.any_prompt_task import AnyPromptTask
+from ..task.any_prompt_task import AnyPromptTask
+from .schema import CallbackHandlerFactory
 
 
 class _DefaultCallbackHandler(StreamingStdOutCallbackHandler):

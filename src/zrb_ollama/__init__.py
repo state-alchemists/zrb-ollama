@@ -1,4 +1,4 @@
-from .builtin import install as ollama_install
+from .builtin import install_ollama
 from .factory.schema import (
     CallbackHandlerFactory,
     LLMFactory,
@@ -6,11 +6,13 @@ from .factory.schema import (
     ToolFactory,
 )
 from .group import ollama_group
-from .task.prompt_task import PromptTask
+from .task import AnyPromptTask, PromptTask
 
 assert ollama_group
-assert ollama_install
+assert install_ollama
+assert AnyPromptTask
 assert PromptTask
+
 assert CallbackHandlerFactory
 assert LLMFactory
 assert ToolFactory

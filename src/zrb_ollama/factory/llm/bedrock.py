@@ -2,9 +2,9 @@ import boto3
 from langchain_community.llms import Bedrock
 from langchain_core.language_models import BaseLanguageModel
 
-from zrb_ollama.config import AWS_ACCESS_KEY, AWS_SECRET_ACCESS_KEY
-from zrb_ollama.factory.schema import LLMFactory
-from zrb_ollama.task.any_prompt_task import AnyPromptTask
+from ...config import AWS_ACCESS_KEY, AWS_SECRET_ACCESS_KEY
+from ...task.any_prompt_task import AnyPromptTask
+from ..schema import LLMFactory
 
 
 def bedrock_llm_factory(

@@ -25,18 +25,18 @@ from zrb import (
 from zrb.helper.typecheck import typechecked
 from zrb.helper.typing import Any, Callable, Iterable, List
 
-from zrb_ollama.config import (
+from ..config import (
     DEFAULT_CHAT_HISTORY_RETENTION,
     DEFAULT_LLM_PROVIDER,
     DEFAULT_SYSTEM_PROMPT,
 )
-from zrb_ollama.factory.schema import (
+from ..factory.schema import (
     CallbackHandlerFactory,
     LLMFactory,
     PromptFactory,
     ToolFactory,
 )
-from zrb_ollama.task.any_prompt_task import AnyPromptTask
+from .any_prompt_task import AnyPromptTask
 
 # flake8: noqa E501
 
@@ -161,9 +161,7 @@ class PromptTask(AnyPromptTask, Task):
     def get_callback_manager(self) -> CallbackManager:
         callback_handler_factories = self._callback_handler_factories
         if len(callback_handler_factories) == 0:
-            from zrb_ollama.factory.callback_handler import (
-                default_callback_handler_factory,
-            )
+            from ..factory.callback_handler import default_callback_handler_factory
 
             callback_handler_factories = [default_callback_handler_factory()]
         return CallbackManager(
@@ -176,18 +174,18 @@ class PromptTask(AnyPromptTask, Task):
         if llm_factory is None:
             llm_provider = self.render_str(self._llm_provider)
             if llm_provider == "openai":
-                from zrb_ollama.factory.llm.openai import openai_llm_factory
+                from ..factory.llm.openai import openai_llm_factory
 
                 self.log_info("Use LLM Provider: OpenAI")
                 llm_factory = openai_llm_factory()
             if llm_provider == "bedrock":
-                from zrb_ollama.factory.llm.bedrock import bedrock_llm_factory
+                from ..factory.llm.bedrock import bedrock_llm_factory
 
                 self.log_info("Use LLM Provider: Bedrock")
                 llm_factory = bedrock_llm_factory()
 
             if llm_factory is None:
-                from zrb_ollama.factory.llm.ollama import ollama_llm_factory
+                from ..factory.llm.ollama import ollama_llm_factory
 
                 self.log_info("Use LLM Provider: Ollama")
                 llm_factory = ollama_llm_factory()
@@ -197,7 +195,7 @@ class PromptTask(AnyPromptTask, Task):
     def get_prompt(self) -> BasePromptTemplate:
         prompt_factory = self._prompt_factory
         if prompt_factory is None:
-            from zrb_ollama.factory.prompt import react_prompt_factory
+            from ..factory.prompt import react_prompt_factory
 
             prompt_factory = react_prompt_factory(self._system_prompt)
         prompt = prompt_factory(self)
@@ -207,7 +205,7 @@ class PromptTask(AnyPromptTask, Task):
     def get_tools(self) -> List[BaseTool]:
         tool_factories = self._tool_factories
         if len(tool_factories) == 0:
-            from zrb_ollama.factory.tool.search import search_tool_factory
+            from ..factory.tool.search import search_tool_factory
 
             tool_factory = search_tool_factory()
             tool_factories = [tool_factory]

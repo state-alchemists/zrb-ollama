@@ -7,8 +7,8 @@ from langchain_community.vectorstores import FAISS
 from langchain_core.embeddings import Embeddings
 from langchain_core.tools import BaseTool
 
-from zrb_ollama.factory.schema import ToolFactory
-from zrb_ollama.task.any_prompt_task import AnyPromptTask
+from ...task.any_prompt_task import AnyPromptTask
+from ..schema import ToolFactory
 
 
 def rag_tool_factory(

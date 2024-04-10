@@ -1,9 +1,9 @@
 from langchain.prompts import PromptTemplate
 from langchain_core.prompts import BasePromptTemplate
 
-from zrb_ollama.config import DEFAULT_SYSTEM_PROMPT
-from zrb_ollama.factory.schema import PromptFactory
-from zrb_ollama.task.any_prompt_task import AnyPromptTask
+from ..config import DEFAULT_SYSTEM_PROMPT
+from ..task.any_prompt_task import AnyPromptTask
+from .schema import PromptFactory
 
 
 def react_prompt_factory(system_prompt: str = DEFAULT_SYSTEM_PROMPT) -> PromptFactory:

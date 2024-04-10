@@ -8,8 +8,8 @@ from langchain_core.tools import BaseTool
 from readability import Document  # Corrected import statement
 from zrb.helper.accessories.color import colored
 
-from zrb_ollama.factory.schema import ToolFactory
-from zrb_ollama.task.any_prompt_task import AnyPromptTask
+from ...task.any_prompt_task import AnyPromptTask
+from ..schema import ToolFactory
 
 
 def search_tool_factory(
