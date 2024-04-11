@@ -102,7 +102,7 @@ Let's see the following example:
 
 # or you can use Open AI:
 export OPENAI_API_KEY=your-api-key
-export ZRB_DEFAULT_LLM_PROVIDER=openai
+export DEFAULT_LLM_PROVIDER=openai
 
 zrb-ollama-agent "What is the area of a square with 20 cm perimeter?"
 ```
