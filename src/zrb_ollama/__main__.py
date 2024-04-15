@@ -4,9 +4,6 @@ from zrb.helper.accessories.color import colored
 
 from .builtin.install import install_ollama
 from .config import DEFAULT_LLM_PROVIDER
-from .factory.tool.bash_repl import bash_repl_tool_factory
-from .factory.tool.python_repl import python_repl_tool_factory
-from .factory.tool.search import search_tool_factory
 from .task.prompt_task import PromptTask
 
 
@@ -37,6 +34,9 @@ def prompt():
             is_multiline = True
             lines = []
             continue
+        if line.lower() in ["/clear", "/reset"]:
+            _clear_history()
+            continue
         _exec_prompt(line)
 
 
@@ -46,23 +46,28 @@ def _get_line(show_input_prompt: bool) -> str:
     return sys.stdin.readline().strip()
 
 
+def _clear_history():
+    prompt_task = _create_prompt_task("")
+    prompt_task.clear_history()
+
+
 def _exec_prompt(input_prompt: str):
+    prompt_task = _create_prompt_task(input_prompt)
+    _print_dark("Processing your input...")
+    prompt_fn = prompt_task.to_function()
+    prompt_fn()
+
+
+def _create_prompt_task(input_prompt: str) -> PromptTask:
     prompt_task = PromptTask(
         name="prompt",
         icon="🦙",
         color="light_green",
         input_prompt=input_prompt,
-        tool_factories=[
-            search_tool_factory(),
-            bash_repl_tool_factory(),
-            python_repl_tool_factory(),
-        ],
     )
     if DEFAULT_LLM_PROVIDER == "ollama":
         prompt_task.add_upstream(install_ollama)
-    _print_dark("Processing your input...")
-    prompt_fn = prompt_task.to_function()
-    prompt_fn()
+    return prompt_task
 
 
 def _print_all_instructions():
@@ -70,6 +75,7 @@ def _print_all_instructions():
     _print_instruction("/bye", "Quit")
     _print_instruction("/multi", "Start multiline mode")
     _print_instruction("/end", "Stop multiline mode")
+    _print_instruction("/clear", "Clear history")
 
 
 def _print_instruction(instruction: str, description: str):

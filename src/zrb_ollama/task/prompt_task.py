@@ -26,16 +26,20 @@ from zrb.helper.typecheck import typechecked
 from zrb.helper.typing import Any, Callable, Iterable, List
 
 from ..config import (
+    DEFAULT_CHAT_HISTORY_FILE_NAME,
     DEFAULT_CHAT_HISTORY_RETENTION,
     DEFAULT_LLM_PROVIDER,
     DEFAULT_SYSTEM_PROMPT,
 )
+from ..factory.llm.default import default_llm_factory
+from ..factory.prompt.default import default_prompt_factory
 from ..factory.schema import (
     CallbackHandlerFactory,
     LLMFactory,
     PromptFactory,
     ToolFactory,
 )
+from ..factory.tool.default import default_tool_factories
 from .any_prompt_task import AnyPromptTask
 
 # flake8: noqa E501
@@ -85,13 +89,13 @@ class PromptTask(AnyPromptTask, Task):
         name: str,
         input_prompt: str,
         system_prompt: str = DEFAULT_SYSTEM_PROMPT,
-        history_file: str = "",
+        history_file: str = DEFAULT_CHAT_HISTORY_FILE_NAME,
         chat_history_retention: int = DEFAULT_CHAT_HISTORY_RETENTION,
         callback_handler_factories: Iterable[CallbackHandlerFactory] = [],
-        tool_factories: Iterable[ToolFactory] = [],
+        tool_factories: Iterable[ToolFactory] = default_tool_factories(),
         llm_provider: str = DEFAULT_LLM_PROVIDER,
-        llm_factory: LLMFactory | None = None,
-        prompt_factory: PromptFactory | None = None,
+        llm_factory: LLMFactory = default_llm_factory(),
+        prompt_factory: PromptFactory = default_prompt_factory(),
         group: Group | None = None,
         description: str = "",
         inputs: List[AnyInput] = [],
@@ -151,11 +155,12 @@ class PromptTask(AnyPromptTask, Task):
     @lru_cache(maxsize=1)
     def get_history_file_name(self) -> str:
         history_file = self._history_file
-        if history_file == "":
-            history_file = os.path.join("~", ".zrb-ollama-history.txt")
         rendered_history_file = os.path.expanduser(self.render_str(history_file))
         self.log_info(f"History file: {rendered_history_file}")
         return rendered_history_file
+
+    def clear_history(self):
+        os.remove(self.get_history_file_name())
 
     @lru_cache(maxsize=1)
     def get_callback_manager(self) -> CallbackManager:
@@ -170,46 +175,16 @@ class PromptTask(AnyPromptTask, Task):
 
     @lru_cache(maxsize=1)
     def get_llm(self) -> BaseLanguageModel:
-        llm_factory = self._llm_factory
-        if llm_factory is None:
-            llm_provider = self.render_str(self._llm_provider)
-            if llm_provider == "openai":
-                from ..factory.llm.openai import openai_llm_factory
-
-                self.log_info("Use LLM Provider: OpenAI")
-                llm_factory = openai_llm_factory()
-            if llm_provider == "bedrock":
-                from ..factory.llm.bedrock import bedrock_llm_factory
-
-                self.log_info("Use LLM Provider: Bedrock")
-                llm_factory = bedrock_llm_factory()
-
-            if llm_factory is None:
-                from ..factory.llm.ollama import ollama_llm_factory
-
-                self.log_info("Use LLM Provider: Ollama")
-                llm_factory = ollama_llm_factory()
-        return llm_factory(self)
+        return self._llm_factory(self)
 
     @lru_cache(maxsize=1)
     def get_prompt(self) -> BasePromptTemplate:
-        prompt_factory = self._prompt_factory
-        if prompt_factory is None:
-            from ..factory.prompt import react_prompt_factory
-
-            prompt_factory = react_prompt_factory(self._system_prompt)
-        prompt = prompt_factory(self)
-        return prompt
+        return self._prompt_factory(self)
 
     @lru_cache(maxsize=1)
     def get_tools(self) -> List[BaseTool]:
         tool_factories = self._tool_factories
-        if len(tool_factories) == 0:
-            from ..factory.tool.search import search_tool_factory
-
-            tool_factory = search_tool_factory()
-            tool_factories = [tool_factory]
-        return [factory(self) for factory in tool_factories]
+        return [tool_factory(self) for tool_factory in tool_factories]
 
     @lru_cache(maxsize=1)
     def get_agent(self) -> Agent:

@@ -37,3 +37,7 @@ class AnyPromptTask(AnyTask):
     @abstractmethod
     def get_history_file_name(self) -> str:
         pass
+
+    @abstractmethod
+    def clear_history(self):
+        pass
