@@ -1,12 +1,12 @@
 from langchain.prompts import PromptTemplate
 from langchain_core.prompts import BasePromptTemplate
 
-from ...config import DEFAULT_SYSTEM_PROMPT
+from ...config import SYSTEM_PROMPT
 from ...task.any_prompt_task import AnyPromptTask
 from ..schema import PromptFactory
 
 
-def react_prompt_factory(system_prompt: str = DEFAULT_SYSTEM_PROMPT) -> PromptFactory:
+def react_prompt_factory(system_prompt: str = SYSTEM_PROMPT) -> PromptFactory:
     def create_prompt(task: AnyPromptTask) -> BasePromptTemplate:
         return PromptTemplate.from_template(
             "\n".join(

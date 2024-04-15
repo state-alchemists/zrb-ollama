@@ -60,7 +60,9 @@ def _get_retriever(
     db_dir_path: str,
     embeddings: Embeddings,
 ):
-    vector = FAISS.load_local(db_dir_path, embeddings)
+    vector = FAISS.load_local(
+        db_dir_path, embeddings, allow_dangerous_deserialization=True
+    )
     retriever = vector.as_retriever()
     return retriever
 

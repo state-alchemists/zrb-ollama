@@ -2,7 +2,9 @@
 
 # Zrb Ollama
 
-Zrb Ollama is a [pypi](https://pypi.org) package that acts as Ollama and LangChain wrapper, allowing you to incorporate LLM into your workflow.
+Zrb Ollama is a [pypi](https://pypi.org) package that acts as Ollama's and LangChain's wrapper, allowing you to incorporate LLM into your workflow.
+
+Zrb Ollama is a part of [Zrb](https://pypi.org/project/zrb) ecosystem, but you can install it independently from Zrb. 
 
 # Installation
 
@@ -12,137 +14,116 @@ You can install Zrb Ollama by invoking any of the following commands:
 # From pypi
 pip install zrb-ollama
 # From github
-pip install git+https://github.com/goFrendiAsgard/zrb-ollama.git@main
+pip install git+https://github.com/state-alchemists/zrb-ollama.git@main
 # From directory
 pip install --use-feature=in-tree-build path/to/this/directory
 ```
 
 By default, Zrb Ollama uses Ollama-based LLM. You can install Ollama by visiting the official website: [`https://ollama.ai/`](https://ollama.ai/).
 
-You can, however, change this behavior by setting `OPENAI_API_KEY`. When `OPENAI_API_KEY` is present, Zrb Ollama will use the Open AI API instead.
+You can, however, change this behavior by setting `ZRB_LLM_PROVIDER` into `openai` or `bedrock`.
 
 # Configuration
 
-You can configure Zrb Ollama using a few environment variables:
+You can configure Zrb Ollama using a few environment variables.
 
-- `ZRB_DEFAULT_LLM_PROVIDER`: LLM Provider (i.e., `ollama`, `openai`, `bedrock`). If not specified, Zrb Ollama will use `ollama`
-- `ZRB_DEFAULT_SYSTEM_PROMPT` Default system prompt
-- `ZRB_DEFAULT_CHAT_HISTORY_RETENTION`: Default: 3
+## General Configuration
+
+- `ZRB_LLM_PROVIDER`: LLM Provider (i.e., `ollama`, `openai`, `bedrock`). If not specified, Zrb Ollama will use `ollama`
+- `ZRB_SYSTEM_PROMPT` Default system prompt
+- `ZRB_CHAT_HISTORY_RETENTION`: Default: 3
+- `ZRB_EMBEDDING_DB_DIR`: Directory to store document embedding. By default, it is `~/.zrb-embedding`.
+- `ZRB_CHAT_HISTORY_FILE`: File to store past conversations. By default, it is `~/.zrb-ollama-history.txt`)
+- `ZRB_DOCUMENT_DIRS`: List of directories for RAG, separated by `:`.
+
+## Ollama Configuration
+
 - `ZRB_OLLAMA_BASE_URL`: Default Ollama base URL. If not specified, Zrb Ollama will use `http://localhost:11434`.
-- `ZRB_OLLAMA_DEFAULT_MODEL`: Default Ollama model. If not specified, Zrb Ollama will use `mistral`.
-- `OPENAI_API_KEY`
-- `AWS_ACCESS_KEY`
-- `AWS_SECRET_ACCESS_KEY`
+- `ZRB_OLLAMA_MODEL`: Default Ollama model. If not specified, Zrb Ollama will use `mistral:latest`.
+- `ZRB_OLLAMA_MODEL`: Default Ollama embedding model (Used for RAG). If not specified, Zrb Ollama will use `mistral:latest`.
+
+## Open AI Configuration
+
+- `OPENAI_API_KEY`: OpenAI API key
+
+## AWS Configuration
+
+- `AWS_ACCESS_KEY`: AWS Access Key
+- `AWS_SECRET_ACCESS_KEY`: AWS Secret Key
+- `AWS_REGION_NAME`: AWS Region (By default, it is `us-east-1`)
+- `BEDROCK_MODEL`: Default bedrock model (By default, it is `anthropic.claude-v2`)
 
 # Talk to Zrb Ollama
 
-Zrb Ollama provides a simple CLI command to interact with the LLM. This CLI command also manages your chat history and saves everything under `~/.zrb-ollama-context.json`.
-
-Let's see the following example:
+You can effortlessly enjoy RAG functionality.
 
 ```bash
-zrb-ollama "Why is the sky blue?"
-```
-
-<details>
-<summary>👇See the output</summary>
-
-```
-The sky appears blue due to a phenomenon called Rayleigh scattering. When sunlight enters Earth's atmosphere, it encounters molecules and tiny particles in the air. The shorter wavelengths of light, such as blue and violet, are scattered more strongly by these particles compared to the longer wavelengths of light, like red and orange. As a result, the blue light gets scattered in all directions, creating the blue appearance of the sky.
-```
-
-</details>
-
-Zrb Ollama will explain why the sky is blue.
-
-Next, you can ask it to give a more detailed explanation:
-
-```bash
-zrb-ollama "Explain in more detailed"
-```
-
-<details>
-<summary>👇See the output</summary>
-
-```
-Sure! When sunlight reaches Earth's atmosphere, it is composed of different colors of light, each with a different wavelength. The shorter wavelengths, such as blue and violet, have higher energy, while the longer wavelengths, such as red and orange, have lower energy.
-
-As sunlight enters the atmosphere, it interacts with the molecules and tiny particles present in the air. These particles include nitrogen and oxygen molecules, as well as dust, water droplets, and other small particles.
-
-The interaction between the sunlight and these particles causes a scattering of light. This scattering process is known as Rayleigh scattering. It is named after the British physicist Lord Rayleigh, who first explained it in the 19th century.
-
-Rayleigh scattering occurs when the size of the particles in the atmosphere is much smaller than the wavelength of light. In this case, the scattering is inversely proportional to the fourth power of the wavelength. This means that shorter wavelengths, such as blue and violet light, are scattered much more strongly than longer wavelengths, such as red and orange light.
-
-As a result, when sunlight enters the atmosphere, the blue and violet light is scattered in all directions by the particles in the air. This scattered blue light then reaches our eyes from all parts of the sky, making it appear blue to us.
-
-It's important to note that the scattering of light is not limited to just the blue color. However, since our eyes are more sensitive to blue light, we perceive the scattered blue light more prominently, hence the blue appearance of the sky.
-
-At sunrise or sunset, when the sun is lower in the sky, the sunlight has to pass through a larger portion of the atmosphere before reaching us. This longer path causes more scattering and absorption of shorter wavelengths, like blue and violet light, resulting in the red, orange, and pink hues commonly seen during these times.
-
-In summary, the sky appears blue due to Rayleigh scattering, where the shorter wavelengths of sunlight, particularly blue and violet light, are scattered more strongly by the particles in the atmosphere, making the scattered blue light dominant in our perception.
-```
-
-</details>
-
-It will understand that you asked for a more detailed explanation of why the sky is blue.
-
-# Talk is Cheap, Show Me The Code
-
-Furthermore, Zrb Ollama also allows you to use an AI Agent. This AI Agent can access the internet and interact with the Python interpreter.
-
-Zrb Ollama Agent will show you the reasoning process, the solution, and the respecting Python code.
-
-Note that for this to work, you need better LLM models like `Mistral` or Open AI.
-
-Let's see the following example:
-
-```bash
-# You can use Ollama's mistral model:
-# export ZRB_OLLAMA_DEFAULT_MODEL=mistral
-
-# or you can use Open AI:
 export OPENAI_API_KEY=your-api-key
-export ZRB_DEFAULT_LLM_PROVIDER=openai
-
-zrb-ollama-agent "What is the area of a square with 20 cm perimeter?"
+export ZRB_LLM_PROVIDER=openai
+export ZRB_DOCUMENT_DIRS=${HOME}/borg/src/daily/notes
+zrb-ollama
 ```
 
-<details>
-<summary>👇See the output</summary>
+Let's see some conversation recaps.
+
+## Who are you?
+
+The AI can answer this question without using any tool.
 
 ```
-Thought: To find the area of a square, we need to know the side length. We can calculate the side length by dividing the perimeter by 4. Once we have the side length, we can use the formula for the area of a square, which is side length squared.
+Human: Who are you?
 
-    Action: Python code
-
-    ```python
-    # Calculating the area of a square
-    perimeter = 20
-    side_length = perimeter / 4
-    area = side_length ** 2
-    # Displaying the solution
-    print(area)
-    ```
-    I need to provide the input for the action, which is the value of the perimeter.
-
-    Action: python_repl
-    Action Input: 20
-    The code executed successfully and provided the expected output.
-
-    Final Answer:
-    - Solution: The area of a square with a perimeter of 20 cm is 25 square centimeters.
-    - Code:
-      ```python
-      # Calculating the area of a square
-      perimeter = 20
-      side_length = perimeter / 4
-      area = side_length ** 2
-      # Displaying the solution
-      print(area)
-      ```
+Assistant: I am Assistant, a large language model designed to assist humans in a wide variety of tasks. I am always here to help you with any questions or tasks you may have.
 ```
 
-</details>
+## What are you capable of?
+
+Again, the AI can answer this question without using any tool.
+
+```
+Human: What are you capable of?
+
+Assistant: I am capable of assisting you in a wide variety of tasks, such as searching for information, executing bash or python scripts, and providing you with notes. Is there something specific you would like me to help you with?
+```
+
+## What did I write in my notes?
+
+Now, the AI needs to use an `RAG tool`. It will parse your `ZRB_DOCUMENT_DIRS`, turn that into a vector database, and answer the question for you.
+
+```
+Human: What did I write in my notes?
+
+Assistant: You wrote about your experience with a text expander and how it has increased your productivity. You also mentioned using Zrb to define flows and the possibility of using a simple abbreviation for Zrb commands. Additionally, you discussed exploring the click framework and the current issues with Zrb commands, such as being slow and verbose.
+```
+
+## Show me the content of my notes!
+
+To answer this question, the AI needs to use `Bash REPL`.
+
+```
+Human: I wrote my notes in /home/gofrendi/borg/src/daily/notes/ directory. The notes were written in markdown format (*.md). Show me the content of my notes as is.
+Assistant: Here is the content of your notes in markdown format:
+
+# Text expander
+
+- It seems to be simple but highly increase productivity
+- Zrb has handle this in some way, and I'm happy with how I can define flows with zrb (despite of the performance problem on my samsung A4 tablet).
+- Probably what I need to provide is a simple abreviation for Zrb commands. It is painful already, since I already create a shell function named "ztadd", which is alias to "zrb todo add -t $*"
+- Probably I should explore click framework. The problem with zrb commands are currently:
+   - Slow (This is because of PHP like mechanism. All tasks are rendered everytime Zrb is called)
+   - Verbose (i.e., `zrb todo add` instead of `ztadd`)
+   - Use can't add argument right away (i.e, `zrb todo add -t "message"`, rather than `zrb todo add "message"`)
+```
+
+## Who is the Founder of Bank Sinarmas?
+
+Finally, the AI also capable to use a search engine.
+
+```
+Human: Who is the founder of Bank Sinarmas?
+Assistant: Eka Tjipta Widjaja is the founder of Bank Sinarmas.
+```
+
 
 # Getting Creative
 

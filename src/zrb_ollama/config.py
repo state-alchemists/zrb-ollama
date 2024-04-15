@@ -1,11 +1,9 @@
 import os
 
-DEFAULT_LLM_PROVIDER = os.getenv("ZRB_DEFAULT_LLM_PROVIDER", "ollama")
-DEFAULT_CHAT_HISTORY_RETENTION = int(
-    os.getenv("ZRB_DEFAULT_CHAT_HISTORY_RETENTION", "5")
-)
-DEFAULT_SYSTEM_PROMPT = os.getenv(
-    "ZRB_DEFAULT_SYSTEM_PROMPT",
+LLM_PROVIDER = os.getenv("ZRB_LLM_PROVIDER", "ollama")
+CHAT_HISTORY_RETENTION = int(os.getenv("ZRB_CHAT_HISTORY_RETENTION", "5"))
+SYSTEM_PROMPT = os.getenv(
+    "ZRB_SYSTEM_PROMPT",
     "\n".join(
         [
             "Assistant is a large language model.",
@@ -18,18 +16,25 @@ DEFAULT_SYSTEM_PROMPT = os.getenv(
     ),
 )
 
-DEFAULT_EMBEDDING_DB_DIR = os.getenv(
-    "ZRB_DEFAULT_EMBEDDING_DB_DIR", os.path.join("~", ".zrb-embedding")
+EMBEDDING_DB_DIR = os.getenv(
+    "ZRB_EMBEDDING_DB_DIR",
+    os.path.expanduser(os.path.join("~", ".zrb-embedding"))
 )
 
-DEFAULT_CHAT_HISTORY_FILE_NAME = os.getenv(
-    "ZRB_DEFAULT_CHAT_HISTORY_FILE", os.path.join("~", ".zrb-ollama-history.txt")
+CHAT_HISTORY_FILE_NAME = os.getenv(
+    "ZRB_CHAT_HISTORY_FILE",
+    os.path.expanduser(os.path.join("~", ".zrb-ollama-history.txt"))
 )
 
+DOCUMENT_DIRS = os.getenv("ZRB_DOCUMENT_DIRS", "")
 
-DEFAULT_OLLAMA_BASE_URL = os.getenv("ZRB_OLLAMA_BASE_URL", "http://localhost:11434")
-DEFAULT_OLLAMA_MODEL = os.getenv("ZRB_OLLAMA_DEFAULT_MODEL", "mistral:latest")
+OLLAMA_BASE_URL = os.getenv("ZRB_OLLAMA_BASE_URL", "http://localhost:11434")
+OLLAMA_MODEL = os.getenv("ZRB_OLLAMA_MODEL", "mistral:latest")
+OLLAMA_EMBEDDING_MODEL = os.getenv("ZRB_OLLAMA_EMBEDDING_MODEL", "mistral:latest")
 
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
 AWS_ACCESS_KEY = os.getenv("AWS_ACCESS_KEY", "")
 AWS_SECRET_ACCESS_KEY = os.getenv("AWS_SECRET_ACCESS_KEY", "")
+AWS_REGION_NAME = os.getenv("AWS_REGION_NAME", "us-east-1")
+
+BEDROCK_MODEL = os.getenv("ZRB_BEDROCK_MODEL", "anthropic.claude-v2")

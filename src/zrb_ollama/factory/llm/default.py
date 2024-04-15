@@ -1,8 +1,8 @@
-from ...config import DEFAULT_LLM_PROVIDER
+from ...config import LLM_PROVIDER
 from ..schema import LLMFactory
 
 
-def default_llm_factory(llm_provider: str = DEFAULT_LLM_PROVIDER) -> LLMFactory:
+def default_llm_factory(llm_provider: str = LLM_PROVIDER) -> LLMFactory:
     if llm_provider == "openai":
         from .openai import openai_llm_factory
 

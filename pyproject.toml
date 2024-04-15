@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "zrb-ollama"
-version = "0.0.26"
+version = "0.0.27"
 description = "Zrb LLM plugin"
 authors = ["Go Frendi <gofrendiasgard@gmail.com>"]
 license = "AGPL-3.0-or-later"
@@ -8,7 +8,7 @@ readme = "README.md"
 homepage = "https://github.com/state-alchemists/zrb-ollama"
 repository = "https://github.com/state-alchemists/zrb-ollama"
 documentation = "https://github.com/state-alchemists/zrb-ollama"
-keywords = []
+keywords = ["Ollama", "OpenAI", "Bedrock"]
 
 [tool.poetry.dependencies]
 python = ">=3.10.0,<4.0.0"

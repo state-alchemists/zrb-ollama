@@ -3,7 +3,7 @@ import sys
 from zrb.helper.accessories.color import colored
 
 from .builtin.install import install_ollama
-from .config import DEFAULT_LLM_PROVIDER
+from .config import LLM_PROVIDER
 from .task.prompt_task import PromptTask
 
 
@@ -54,7 +54,7 @@ def _clear_history():
 def _exec_prompt(input_prompt: str):
     prompt_task = _create_prompt_task(input_prompt)
     _print_dark("Processing your input...")
-    prompt_fn = prompt_task.to_function()
+    prompt_fn = prompt_task.to_function(show_done_info=False)
     prompt_fn()
 
 
@@ -65,7 +65,7 @@ def _create_prompt_task(input_prompt: str) -> PromptTask:
         color="light_green",
         input_prompt=input_prompt,
     )
-    if DEFAULT_LLM_PROVIDER == "ollama":
+    if LLM_PROVIDER == "ollama":
         prompt_task.add_upstream(install_ollama)
     return prompt_task
 

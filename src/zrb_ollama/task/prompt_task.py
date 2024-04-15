@@ -26,10 +26,10 @@ from zrb.helper.typecheck import typechecked
 from zrb.helper.typing import Any, Callable, Iterable, List
 
 from ..config import (
-    DEFAULT_CHAT_HISTORY_FILE_NAME,
-    DEFAULT_CHAT_HISTORY_RETENTION,
-    DEFAULT_LLM_PROVIDER,
-    DEFAULT_SYSTEM_PROMPT,
+    CHAT_HISTORY_FILE_NAME,
+    CHAT_HISTORY_RETENTION,
+    LLM_PROVIDER,
+    SYSTEM_PROMPT,
 )
 from ..factory.llm.default import default_llm_factory
 from ..factory.prompt.default import default_prompt_factory
@@ -88,12 +88,12 @@ class PromptTask(AnyPromptTask, Task):
         self,
         name: str,
         input_prompt: str,
-        system_prompt: str = DEFAULT_SYSTEM_PROMPT,
-        history_file: str = DEFAULT_CHAT_HISTORY_FILE_NAME,
-        chat_history_retention: int = DEFAULT_CHAT_HISTORY_RETENTION,
+        system_prompt: str = SYSTEM_PROMPT,
+        history_file: str = CHAT_HISTORY_FILE_NAME,
+        chat_history_retention: int = CHAT_HISTORY_RETENTION,
         callback_handler_factories: Iterable[CallbackHandlerFactory] = [],
         tool_factories: Iterable[ToolFactory] = default_tool_factories(),
-        llm_provider: str = DEFAULT_LLM_PROVIDER,
+        llm_provider: str = LLM_PROVIDER,
         llm_factory: LLMFactory = default_llm_factory(),
         prompt_factory: PromptFactory = default_prompt_factory(),
         group: Group | None = None,

@@ -3,14 +3,14 @@ from typing import List
 from langchain_community.llms.ollama import Ollama
 from langchain_core.language_models import BaseLanguageModel
 
-from ...config import DEFAULT_OLLAMA_BASE_URL, DEFAULT_OLLAMA_MODEL
+from ...config import OLLAMA_BASE_URL, OLLAMA_MODEL
 from ...task.any_prompt_task import AnyPromptTask
 from ..schema import LLMFactory
 
 
 def ollama_llm_factory(
-    base_url: str = DEFAULT_OLLAMA_BASE_URL,
-    model: str = DEFAULT_OLLAMA_MODEL,
+    base_url: str = OLLAMA_BASE_URL,
+    model: str = OLLAMA_MODEL,
     mirostat: str | int | None = None,
     mirostat_eta: str | float | None = None,
     mirostat_tau: str | float | None = None,
