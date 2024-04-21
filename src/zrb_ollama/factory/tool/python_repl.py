@@ -12,8 +12,8 @@ from ..schema import ToolFactory
 
 
 def python_repl_tool_factory(
-    name: str = "Python REPL",
-    description: str = "Use this to execute or test python code. Input should be a valid python code.",  # noqa
+    name: str = "Python Code Runner",
+    description: str = "Use this tool to execute a Python Code. The input should be a valid and complete Python Code that doesn't require user intervention.",  # noqa
 ) -> ToolFactory:
     def create_python_repl_tool(task: AnyPromptTask) -> BaseTool:
         return Tool(
@@ -53,7 +53,7 @@ def _eval_python(script: str):
 
 def _sanitize_python_script(script: str) -> str:
     script = _sanitize_multiline_python_script(script)
-    if "\n" in script and script[0] == "`" and script[-1] == "`":
+    if "\n" not in script and script[0] == "`" and script[-1] == "`":
         return script[1:-1]
     return script
 

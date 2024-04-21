@@ -2,10 +2,11 @@ import os
 
 from langchain.text_splitter import CharacterTextSplitter
 from langchain.tools.retriever import create_retriever_tool
-from langchain_community.document_loaders import TextLoader
+from langchain_community.document_loaders import DirectoryLoader
 from langchain_community.vectorstores import FAISS
 from langchain_core.embeddings import Embeddings
 from langchain_core.tools import BaseTool
+from langchain_core.retrievers import BaseRetriever
 
 from ...task.any_prompt_task import AnyPromptTask
 from ..schema import ToolFactory
@@ -17,8 +18,9 @@ def rag_tool_factory(
     doc_dir_path: str,
     db_dir_path: str,
     embeddings: Embeddings,
-    chunk_size: str | int = 1000,
-    chunk_overlap: str | int = 0,
+    chunk_size: str | int = 500,
+    chunk_overlap: str | int = 20,
+    glob: str = "**/*.md",
 ) -> ToolFactory:
     def create_rag_tool(task: AnyPromptTask) -> BaseTool:
         rendered_doc_dir_path = task.render_str(doc_dir_path)
@@ -32,6 +34,7 @@ def rag_tool_factory(
                 embeddings=embeddings,
                 chunk_size=task.render_int(chunk_size),
                 chunk_overlap=task.render_int(chunk_overlap),
+                glob=task.render_str(glob),
             )
         retriever = _get_retriever(
             db_dir_path=rendered_db_dir_path, embeddings=embeddings
@@ -59,7 +62,7 @@ def _get_latest_mtime(dir_path) -> float:
 def _get_retriever(
     db_dir_path: str,
     embeddings: Embeddings,
-):
+) -> BaseRetriever:
     vector = FAISS.load_local(
         db_dir_path, embeddings, allow_dangerous_deserialization=True
     )
@@ -71,19 +74,15 @@ def _embed_docs(
     doc_dir_path: str,
     db_dir_path: str,
     embeddings: Embeddings,
-    chunk_size: int = 1000,
-    chunk_overlap: int = 0,
+    chunk_size: int,
+    chunk_overlap: int,
+    glob: str,
 ):
-    all_documents = []
-    for root, _, files in os.walk(doc_dir_path):
-        for name in files:
-            file_path = os.path.join(root, name)
-            loader = TextLoader(file_path)
-            file_documents = loader.load()
-            all_documents += file_documents
+    loader = DirectoryLoader(doc_dir_path, glob=glob)
+    docs = loader.load()
     text_splitter = CharacterTextSplitter(
         chunk_size=chunk_size, chunk_overlap=chunk_overlap
     )
-    docs = text_splitter.split_documents(all_documents)
-    vector = FAISS.from_documents(docs, embeddings)
+    splitted_docs = text_splitter.split_documents(docs)
+    vector = FAISS.from_documents(splitted_docs, embeddings)
     vector.save_local(db_dir_path)

@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "zrb-ollama"
-version = "0.0.27"
+version = "0.0.30"
 description = "Zrb LLM plugin"
 authors = ["Go Frendi <gofrendiasgard@gmail.com>"]
 license = "AGPL-3.0-or-later"
@@ -13,20 +13,20 @@ keywords = ["Ollama", "OpenAI", "Bedrock"]
 [tool.poetry.dependencies]
 python = ">=3.10.0,<4.0.0"
 zrb = ">=0.12.0"
-langchain = "~0.1.12"
-langchain-community = "~0.0.28"
-langchain-core = "~0.1.32"
+langchain = "~0.1.16"
+langchain-community = "~0.0.32"
+langchain-core = "~0.1.42"
 requests = "~2.31.0"
 beautifulsoup4 = "~4.12.3"
 lxml = "~5.2.1"
 lxml_html_clean = "~0.1.1"
 readability-lxml = "~0.8.1"
-langchain-openai = {version = "~0.0.7", optional = true}
+langchain-openai = {version = "~0.0.8", optional = true}
 openai = {version = "~1.10.0", optional = true}
-boto3 = {version = "~1.34.64", optional = true}
-faiss-cpu = {version = "~1.7.4", optional = true}
+boto3 = {version = "~1.34.84", optional = true}
+faiss-cpu = {version = "~1.8.0", optional = true}
 faiss-gpu = {version = "~1.7.2", optional = true}
-tiktoken = {version = "~0.5.2", optional = true}
+tiktoken = {version = "~0.6.0", optional = true}
 
 [tool.poetry.extras]
 openai = ["langchain-openai", "openai"]

@@ -1,5 +1,6 @@
 import sys
 from typing import Callable, Mapping
+from functools import lru_cache
 
 import requests
 from bs4 import BeautifulSoup
@@ -10,13 +11,18 @@ from zrb.helper.accessories.color import colored
 
 from ...task.any_prompt_task import AnyPromptTask
 from ..schema import ToolFactory
+from ...config import MAX_SEARCH_CHAR_LENGTH, MAX_SEARCH_RESULT
+
+_HEADERS = {
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"  # noqa
+}
 
 
 def search_tool_factory(
     name: str = "Search Engine",
-    description: str = "Use this tool to lookup information from search engine. Input should be the query.",  # noqa
-    max_results: str | int = 5,
-    max_char_length: str | int = 10000,
+    description: str = "Use this tool to lookup factual/up-to-date information from the internet. The input should be the search query.",  # noqa
+    max_results: str | int = MAX_SEARCH_RESULT,
+    max_char_length: str | int = MAX_SEARCH_CHAR_LENGTH,
 ) -> ToolFactory:
     def create_search_tool(task: AnyPromptTask) -> BaseTool:
         return Tool(
@@ -36,13 +42,11 @@ def _create_search_duckduckgo(
     max_results: int,
     max_char_length: int,
 ) -> Callable[[str], str]:
+    @lru_cache
     def search_duckduckgo(keyword: str) -> str:
-        headers = {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"  # noqa
-        }
         params = {"q": keyword, "kl": "wt-wt", "kp": "-1"}
         response = requests.get(
-            "https://duckduckgo.com/html/", params=params, headers=headers
+            "https://duckduckgo.com/html/", params=params, headers=_HEADERS
         )
         if response.status_code == 200:
             soup = BeautifulSoup(response.content, "html.parser")
@@ -54,7 +58,7 @@ def _create_search_duckduckgo(
                     result_count >= max_results or len(return_value) >= max_char_length
                 ):  # noqa
                     break
-                main_content = _extract_main_content(url, headers)
+                main_content = _extract_main_content(url)
                 print(colored(f"Fetching URL: {url}", attrs=["dark"]))
                 if main_content != "":
                     print(
@@ -71,9 +75,10 @@ def _create_search_duckduckgo(
     return search_duckduckgo
 
 
-def _extract_main_content(url: str, headers: Mapping[str, str]):
+@lru_cache
+def _extract_main_content(url: str):
     try:
-        response = requests.get(url, headers=headers)
+        response = requests.get(url, headers=_HEADERS)
         if response.status_code == 200:
             # Use readability-lxml's Document for extracting main content
             doc = Document(response.text)

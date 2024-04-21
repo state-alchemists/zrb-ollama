@@ -45,13 +45,15 @@ You can configure Zrb Ollama using a few environment variables.
 ## Open AI Configuration
 
 - `OPENAI_API_KEY`: OpenAI API key
+- `OPENAI_MODEL`: OpenAI model (Default to `gpt-3.5-turbo-instruct`)
+- `OPENAI_API_BASE`: OpenAI base URL, default to empty.
 
 ## AWS Configuration
 
 - `AWS_ACCESS_KEY`: AWS Access Key
 - `AWS_SECRET_ACCESS_KEY`: AWS Secret Key
 - `AWS_REGION_NAME`: AWS Region (By default, it is `us-east-1`)
-- `BEDROCK_MODEL`: Default bedrock model (By default, it is `anthropic.claude-v2`)
+- `BEDROCK_MODEL_ID`: Default bedrock model (By default, it is `anthropic.claude-v2`)
 
 # Talk to Zrb Ollama
 

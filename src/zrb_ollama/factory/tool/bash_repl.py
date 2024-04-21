@@ -12,8 +12,8 @@ from ..schema import ToolFactory
 
 
 def bash_repl_tool_factory(
-    name: str = "Bash REPL",
-    description: str = "Use this to execute or test bash script. Input should be a valid bash script.",  # noqa
+    name: str = "Bash Runner",
+    description: str = "Use this tool to execute a Bash Script. The input should be a valid and complete Bash Script that doesn't require user intervention.",  # noqa
 ) -> ToolFactory:
     def create_bash_repl_tool(task: AnyPromptTask) -> BaseTool:
         return Tool(
@@ -53,7 +53,7 @@ def _eval_bash(script: str):
 
 def _sanitize_bash_script(script: str) -> str:
     script = _sanitize_multiline_bash_script(script)
-    if "\n" in script and script[0] == "`" and script[-1] == "`":
+    if "\n" not in script and script[0] == "`" and script[-1] == "`":
         return script[1:-1]
     return script
 

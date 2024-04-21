@@ -58,7 +58,7 @@ def _create_rag_tool_factory(
     human_dir_base_name = to_human_readable(dir_base_name).capitalize()
     return rag_tool_factory(
         name=f"{human_dir_base_name} Search",
-        description=f"Use this tool to search for {human_dir_base_name}",
+        description=f"Use this tool to search for {human_dir_base_name} documents.",
         doc_dir_path=document_dir,
         db_dir_path=os.path.join(EMBEDDING_DB_DIR, dir_base_name),
         embeddings=embeddings

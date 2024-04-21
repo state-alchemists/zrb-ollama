@@ -23,7 +23,7 @@ from zrb import (
     Task,
 )
 from zrb.helper.typecheck import typechecked
-from zrb.helper.typing import Any, Callable, Iterable, List
+from zrb.helper.typing import Any, Callable, Iterable, List, Union
 
 from ..config import (
     CHAT_HISTORY_FILE_NAME,
@@ -96,6 +96,7 @@ class PromptTask(AnyPromptTask, Task):
         llm_provider: str = LLM_PROVIDER,
         llm_factory: LLMFactory = default_llm_factory(),
         prompt_factory: PromptFactory = default_prompt_factory(),
+        stop_sequence: Union[bool, List[str]] = True,
         group: Group | None = None,
         description: str = "",
         inputs: List[AnyInput] = [],
@@ -151,6 +152,7 @@ class PromptTask(AnyPromptTask, Task):
         self._input_prompt = input_prompt
         self._system_prompt = system_prompt
         self._chat_history_retention = chat_history_retention
+        self._stop_sequence = stop_sequence
 
     @lru_cache(maxsize=1)
     def get_history_file_name(self) -> str:
@@ -160,7 +162,8 @@ class PromptTask(AnyPromptTask, Task):
         return rendered_history_file
 
     def clear_history(self):
-        os.remove(self.get_history_file_name())
+        if os.path.isfile(self.get_history_file_name()):
+            os.remove(self.get_history_file_name())
 
     @lru_cache(maxsize=1)
     def get_callback_manager(self) -> CallbackManager:
@@ -192,6 +195,7 @@ class PromptTask(AnyPromptTask, Task):
             llm=self.get_llm(),
             tools=self.get_tools(),
             prompt=self.get_prompt(),
+            stop_sequence=self._stop_sequence,
         )
 
     @lru_cache(maxsize=1)
@@ -199,7 +203,8 @@ class PromptTask(AnyPromptTask, Task):
         return AgentExecutor(
             agent=self.get_agent(),
             tools=self.get_tools(),
-            handle_parsing_errors="Check your output and make sure it conforms",
+            handle_parsing_errors=True,
+            max_iterations=10,
         )
 
     async def run(self, *args: Any, **kwargs: Any) -> Any:
