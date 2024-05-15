@@ -12,11 +12,14 @@ You can install Zrb Ollama by invoking any of the following commands:
 
 ```bash
 # From pypi
-pip install zrb-ollama
+pip install zrb-ollama[openai,bedrock,embedding-cpu]
+
 # From github
 pip install git+https://github.com/state-alchemists/zrb-ollama.git@main
+
 # From directory
 pip install --use-feature=in-tree-build path/to/this/directory
+
 ```
 
 By default, Zrb Ollama uses Ollama-based LLM. You can install Ollama by visiting the official website: [`https://ollama.ai/`](https://ollama.ai/).
@@ -40,7 +43,7 @@ You can configure Zrb Ollama using a few environment variables.
 
 - `ZRB_OLLAMA_BASE_URL`: Default Ollama base URL. If not specified, Zrb Ollama will use `http://localhost:11434`.
 - `ZRB_OLLAMA_MODEL`: Default Ollama model. If not specified, Zrb Ollama will use `mistral:latest`.
-- `ZRB_OLLAMA_MODEL`: Default Ollama embedding model (Used for RAG). If not specified, Zrb Ollama will use `mistral:latest`.
+- `ZRB_OLLAMA_EMBEDDING_MODEL`: Default Ollama embedding model (Used for RAG). If not specified, Zrb Ollama will use `nomic-embed-text`.
 
 ## Open AI Configuration
 
