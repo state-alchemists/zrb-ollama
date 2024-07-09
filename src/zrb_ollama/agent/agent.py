@@ -3,6 +3,7 @@ import re
 import litellm
 import traceback
 from typing import List, Mapping, Any, Callable, Optional
+from zrb.helper.callable import run_async
 
 from .helper import extract_metadata, get_metadata_signature
 
@@ -117,7 +118,7 @@ class Agent():
     def get_history(self) -> List[Any]:
         return self._previous_messages
 
-    def add_user_message(self, user_message: Any) -> List[Any]:
+    async def add_user_message(self, user_message: Any) -> List[Any]:
         self._append_message({"role": "user", "content": user_message})
         self._print("📜 System prompt")
         self._print(self.get_system_message()["content"])
@@ -125,7 +126,7 @@ class Agent():
         for previous_message in self.get_history():
             self._print(previous_message)
         for i in range(self._max_iteration):
-            response = litellm.completion(
+            response = await litellm.acompletion(
                 model=self._model, messages=self._messages, **self._kwargs
             )
             response_message = response.choices[0].message
@@ -149,7 +150,7 @@ class Agent():
             result = None
             try:
                 self._validate_function_call(function_name, function_kwargs)
-                result = self._execute_function(function_name, function_kwargs)
+                result = await self._execute_function(function_name, function_kwargs)
                 self._print(f"✅ Result {result}")
                 self._append_function_call_ok(function_name, function_kwargs, result)
             except Exception as exc:
@@ -244,12 +245,12 @@ class Agent():
                 "action_required": "Revise your response to include all required arguments and remove any invalid ones",  # noqa
             })
 
-    def _execute_function(
+    async def _execute_function(
         self, function_name: str, kwargs: Mapping[str, Any]
     ) -> Any:
         try:
             function_map = self._function_map
-            return function_map[function_name](**kwargs)
+            return await run_async(function_map[function_name], **kwargs)
         except Exception as exc:
             raise self._map_to_exception({
                 "error": "EXECUTION FAILED",

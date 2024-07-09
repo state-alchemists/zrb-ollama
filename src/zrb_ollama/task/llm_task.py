@@ -96,4 +96,4 @@ class LLMTask(Task):
                 for key, val in self._agent_kwargs.items()
             }
         )
-        return agent.add_user_message(self.render_str(self._user_message))
+        return await agent.add_user_message(self.render_str(self._user_message))

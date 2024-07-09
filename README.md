@@ -64,7 +64,7 @@ ask = LLMTask(
     user_message="{{input.user_prompt}}",
     tools=[
         create_rag(
-            document=john_titor_article,
+            documents=[john_titor_article],
             model="text-embedding-ada-002",
             rag_description="Look for anything related to John Titor"
         ),
@@ -90,6 +90,7 @@ Under the hood, LLMTask makes use of Agent. You can create and interact with the
 from zrb_ollama import agent
 from zrb_ollama.tools import create_rag, query_internet
 
+import asyncio
 import os
 
 _CURRENT_DIR = os.path.dirname(__file__)
@@ -101,14 +102,14 @@ agent = Agent(
     model="gpt-4o",
     tools=[
         create_rag(
-            document=john_titor_article,
+            documents=[john_titor_article],
             model="text-embedding-ada-002",
             rag_description="Look for anything related to John Titor"
         ),
         query_internet,
     ]
 )
-result = agent.add_user_message("How John Titor introduce himself?")
+result = asyncio.run(agent.add_user_message("How John Titor introduce himself?"))
 print(result)
 ```
 
