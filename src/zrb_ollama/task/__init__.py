@@ -1,5 +1,3 @@
-from .any_prompt_task import AnyPromptTask
-from .prompt_task import PromptTask
+from .llm_task import LLMTask
 
-assert AnyPromptTask
-assert PromptTask
+assert LLMTask

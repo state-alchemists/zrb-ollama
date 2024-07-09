@@ -1,19 +1,15 @@
 import sys
 
 from zrb.helper.accessories.color import colored
-
-from .builtin.install import install_ollama
-from .config import LLM_PROVIDER, SYSTEM_PROMPT
-from .task.prompt_task import PromptTask
-from .factory.llm.default import default_llm_factory
+from .agent import Agent
+from .tools import run_shell_command, query_internet
 
 
 def prompt():
-    llm_provider = LLM_PROVIDER
-    system_prompt = SYSTEM_PROMPT
+    model = "ollama/mistral:7b-instruct"
     if len(sys.argv) > 1:
-        input_prompt = " ".join(sys.argv[1:])
-        _exec_prompt(llm_provider, input_prompt, system_prompt)
+        user_input = " ".join(sys.argv[1:])
+        _exec_prompt(model, user_input)
         return
     _print_all_instructions()
     is_multiline = False
@@ -27,8 +23,8 @@ def prompt():
         if is_multiline:
             if line.lower() == "/end":
                 is_multiline = False
-                input_prompt = "\n".join(lines)
-                _exec_prompt(llm_provider, input_prompt, system_prompt)
+                user_input = "\n".join(lines)
+                _exec_prompt(model, user_input)
                 continue
             lines.append(line)
             continue
@@ -42,30 +38,15 @@ def prompt():
             is_multiline = True
             lines = []
             continue
-        if line.lower() in ["/clear", "/reset"]:
-            _clear_history()
-            _print_dark("History cleared")
-            continue
-        # get/set LLM provider
         if line.lower() == "/llm":
-            _print_dark(f"LLM: {llm_provider}")
+            _print_dark(f"LLM: {model}")
             continue
         if line.lower().startswith("/llm"):
-            llm_provider = line[len("/llm"):].strip()
-            continue
-        if line.lower() in ["/ollama", "/openai", "/bedrock"]:
-            llm_provider = line[1:]
-            continue
-        # get/set system prompt
-        if line.lower() == "/system":
-            _print_dark(f"System prompt: {system_prompt}")
-            continue
-        if line.lower().startswith("/system"):
-            system_prompt = line[len("/system"):].strip()
+            model = line[len("/llm"):].strip()
             continue
         # Run the task
-        input_prompt = line
-        _exec_prompt(llm_provider, input_prompt, system_prompt)
+        user_input = line
+        _exec_prompt(model, user_input)
 
 
 def _get_line(show_input_prompt: bool) -> str:
@@ -74,37 +55,14 @@ def _get_line(show_input_prompt: bool) -> str:
     return sys.stdin.readline().strip()
 
 
-def _clear_history():
-    prompt_task = _create_prompt_task(
-        llm_provider="", input_prompt="", system_prompt=""
+def _exec_prompt(model: str, user_message: str):
+    agent = Agent(
+        model=model,
+        tools=[query_internet, run_shell_command],
+        print_fn=_print_dark,
     )
-    prompt_task.clear_history()
-
-
-def _exec_prompt(llm_provider: str, input_prompt: str, system_prompt: str):
-    prompt_task = _create_prompt_task(
-        llm_provider=llm_provider,
-        input_prompt=input_prompt,
-        system_prompt=system_prompt
-    )
-    _print_dark("Processing your input...")
-    prompt_fn = prompt_task.to_function(show_done_info=False)
-    prompt_fn()
-
-
-def _create_prompt_task(
-    llm_provider: str, input_prompt: str, system_prompt: str
-) -> PromptTask:
-    prompt_task = PromptTask(
-        name="prompt",
-        icon="🦙",
-        color="light_green",
-        llm_factory=default_llm_factory(llm_provider),
-        input_prompt=input_prompt,
-    )
-    if llm_provider == "ollama":
-        prompt_task.add_upstream(install_ollama)
-    return prompt_task
+    result = agent.add_user_message(user_message)
+    print(colored(f"{result}", color="yellow"))
 
 
 def _print_all_instructions():
@@ -112,11 +70,8 @@ def _print_all_instructions():
     _print_instruction("/bye", "Quit")
     _print_instruction("/multi", "Start multiline mode")
     _print_instruction("/end", "Stop multiline mode")
-    _print_instruction("/clear", "Clear history")
     _print_instruction("/llm", "Get current LLM provider")
-    _print_instruction("/llm <llm-provider>", "Set LLM provider")
-    _print_instruction("/system", "Get current system prompt")
-    _print_instruction("/system <system-prompt>", "Set system prompt")
+    _print_instruction("/llm <llm-provider>", "Set LLM provider (e.g., ollama/mistral:7b-instruct gpt-4o, bedrock/anthropic.claude-3-sonnet-20240229-v1:0)")  # noqa
 
 
 def _print_instruction(instruction: str, description: str):
@@ -132,4 +87,4 @@ def _print_instruction(instruction: str, description: str):
 
 
 def _print_dark(text: str):
-    print(colored(text, attrs=["dark"]))
+    print(colored(f"{text}", attrs=["dark"]))
