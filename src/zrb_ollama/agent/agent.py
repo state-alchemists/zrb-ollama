@@ -5,7 +5,7 @@ import traceback
 from typing import List, Mapping, Any, Callable, Optional
 from zrb.helper.callable import run_async
 
-from .helper import extract_metadata, get_metadata_signature
+from .helper import extract_metadata, get_metadata_signature, get_metadata_description
 
 DEFAULT_SYSTEM_PROMPT: str = """
 You are a helpful assistant.
@@ -101,7 +101,7 @@ class Agent():
                 function_signatures="\n".join([
                     "\n".join([
                         f"- {signature}",
-                        "  " + self._function_schemas[fn_name]["description"]
+                        "  " + get_metadata_description(self._function_schemas[fn_name])
                     ]).strip()
                     for fn_name, signature in self._function_signatures.items()
                 ]),

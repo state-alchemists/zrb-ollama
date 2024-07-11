@@ -4,6 +4,13 @@ from typing import (
 )
 
 
+def get_metadata_description(function_data: Mapping[str, Any]) -> str:
+    description = function_data["description"]
+    if description is None:
+        return ""
+    return description
+
+
 def get_metadata_signature(function_data: Mapping[str, Any]) -> str:
     name = function_data['name']
     arguments = function_data['arguments']
