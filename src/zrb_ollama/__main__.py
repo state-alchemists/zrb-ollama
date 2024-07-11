@@ -1,15 +1,23 @@
+import asyncio
+import os
 import sys
 
+from typing import Any, List
 from zrb.helper.accessories.color import colored
 from .agent import Agent
 from .tools import run_shell_command, query_internet
 
 
 def prompt():
-    model = "ollama/mistral:7b-instruct"
+    asyncio.run(async_prompt())
+
+
+async def async_prompt():
+    model = os.getenv("EXAMPLE_MODEL", "ollama/mistral:7b-instruct")
+    previous_messages = []
     if len(sys.argv) > 1:
         user_input = " ".join(sys.argv[1:])
-        _exec_prompt(model, user_input)
+        previous_messages = await _exec_prompt(model, user_input, previous_messages)
         return
     _print_all_instructions()
     is_multiline = False
@@ -24,7 +32,9 @@ def prompt():
             if line.lower() == "/end":
                 is_multiline = False
                 user_input = "\n".join(lines)
-                _exec_prompt(model, user_input)
+                previous_messages = await _exec_prompt(
+                    model, user_input, previous_messages
+                )
                 continue
             lines.append(line)
             continue
@@ -46,7 +56,7 @@ def prompt():
             continue
         # Run the task
         user_input = line
-        _exec_prompt(model, user_input)
+        previous_messages = await _exec_prompt(model, user_input, previous_messages)
 
 
 def _get_line(show_input_prompt: bool) -> str:
@@ -55,14 +65,16 @@ def _get_line(show_input_prompt: bool) -> str:
     return sys.stdin.readline().strip()
 
 
-def _exec_prompt(model: str, user_message: str):
+async def _exec_prompt(model: str, user_message: str, previous_messages: List[Any]):
     agent = Agent(
         model=model,
         tools=[query_internet, run_shell_command],
+        previous_messages=previous_messages,
         print_fn=_print_dark,
     )
-    result = agent.add_user_message(user_message)
+    result = await agent.add_user_message(user_message)
     print(colored(f"{result}", color="yellow"))
+    return agent.get_history()
 
 
 def _print_all_instructions():
