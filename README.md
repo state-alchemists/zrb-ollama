@@ -19,6 +19,7 @@ pip install git+https://github.com/state-alchemists/zrb-ollama.git@main
 
 # From directory
 pip install --use-feature=in-tree-build path/to/this/directory
+
 ```
 
 By default, Zrb Ollama uses Ollama-based LLM. You can install Ollama by visiting the official website: [`https://ollama.ai/`](https://ollama.ai/).

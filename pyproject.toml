@@ -24,7 +24,6 @@ chromadb= {version = "~0.5.3", optional = true}
 aws = ["boto3"]
 chromadb = ["chromadb"]
 
-
 [tool.poetry.dev-dependencies]
 flake8 = "~6.0.0"
 black = "~23.12.1"
