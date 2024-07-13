@@ -1,6 +1,6 @@
 from zrb import runner, CmdTask, StrInput
-from zrb_ollama import LLMTask
-from zrb_ollama.tools import query_internet, create_rag, get_git_diff
+from zrb_ollama import LLMTask, ToolFactory
+from zrb_ollama.tools import query_internet, create_rag, create_get_changes
 
 import os
 
@@ -27,15 +27,19 @@ rag = LLMTask(
     model=_MODEL,
     user_message="{{input.user_prompt}}",
     tools=[
-        create_rag(
+        query_internet
+    ],
+    tool_factories=[
+        ToolFactory(
+            create_rag,
+            tool_name="retrieve_john_titor_info",
+            tool_description="Look for anything related to John Titor",
             documents=[get_article],
             # model="text-embedding-ada-002",
             model=_EMBEDDING_MODEL,
-            rag_description="Look for anything related to John Titor",
             vector_db_path=os.path.join(_CURRENT_DIR, "john-titor-vector"),
-        ),
-        query_internet,
-    ],
+        )
+    ]
 )
 runner.register(rag)
 
@@ -66,18 +70,30 @@ prepare_repo = CmdTask(
 code_review = LLMTask(
     name="code-review",
     inputs=[
+        StrInput(name="directory", default="./sample-repo"),
+        StrInput(name="initial-branch", default="main"),
+        StrInput(name="new-branch", default="feat/iterative"),
         StrInput(
             name="user-prompt",
-            default="In ./sample-repo, code review the changes on feat/iterative branch relative to main branch. Make suggestions if necessary."  # noqa
+            default="In .sample-repo, code review the changes and make suggestions if necessary."  # noqa
         ),
     ],
     # model="gpt-4o",
     model=_MODEL,
     user_message="{{input.user_prompt}}",
     tools=[
-        get_git_diff,
         query_internet,
     ],
+    tool_factories=[
+        ToolFactory(
+            create_get_changes,
+            tool_name="get_sample_repo_changes",
+            tool_description="Get git diff of sample repo",
+            directory="{{input.directory}}",
+            initial_branch="{{input.initial_branch}}",
+            new_branch="{{input.new_branch}}",
+        )
+    ]
 )
 prepare_repo >> code_review
 runner.register(code_review)

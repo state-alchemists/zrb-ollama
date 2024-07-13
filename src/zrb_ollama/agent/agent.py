@@ -53,6 +53,8 @@ class Agent():
         previous_messages: Optional[List[Any]] = None,
         tools: List[Callable] = [],
         max_iteration: int = 10,
+        should_show_system_prompt: bool = False,
+        should_show_history: bool = False,
         print_fn: Optional[Callable[[str], Any]] = None,
         **kwargs: Mapping[str, Any],
     ):
@@ -66,6 +68,8 @@ class Agent():
         self._tools = [finish_conversation] + tools
         self._max_iteration = max_iteration
         self._kwargs = kwargs
+        self._should_show_system_prompt = should_show_system_prompt
+        self._should_show_history = should_show_history
         self._return = ""
         self._print = print if print_fn is None else print_fn
         if system_message_template is None:
@@ -120,12 +124,15 @@ class Agent():
 
     async def add_user_message(self, user_message: Any) -> List[Any]:
         self._append_message({"role": "user", "content": user_message})
-        self._print("📜 System prompt")
-        self._print(self.get_system_message()["content"])
-        self._print("📜 Previous messages")
-        for previous_message in self.get_history():
-            self._print(previous_message)
-        for i in range(self._max_iteration):
+        if self._should_show_system_prompt:
+            self._print("📜 System prompt")
+            self._print(self.get_system_message()["content"])
+        history = self.get_history()
+        if self._should_show_history and len(history) > 0:
+            self._print("📜 History")
+            for previous_message in history:
+                self._print(previous_message)
+        for _ in range(self._max_iteration):
             response = await litellm.acompletion(
                 model=self._model, messages=self._messages, **self._kwargs
             )

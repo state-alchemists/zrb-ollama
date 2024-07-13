@@ -64,9 +64,10 @@ ask = LLMTask(
     user_message="{{input.user_prompt}}",
     tools=[
         create_rag(
+            tool_name="retrieve",
+            tool_description="Look for anything related to John Titor"
             documents=[john_titor_article],
             model="text-embedding-ada-002",
-            rag_description="Look for anything related to John Titor"
         ),
         query_internet,
     ]
@@ -102,9 +103,10 @@ agent = Agent(
     model="gpt-4o",
     tools=[
         create_rag(
+            tool_name="retrieve",
+            tool_description="Look for anything related to John Titor"
             documents=[john_titor_article],
             model="text-embedding-ada-002",
-            rag_description="Look for anything related to John Titor"
         ),
         query_internet,
     ]

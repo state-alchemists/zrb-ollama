@@ -1,7 +1,6 @@
 from typing import Iterable
-from zrb import Task
+from zrb import AnyTask, Task
 from zrb.helper.typing import Any, Callable, List, Mapping, Optional, Union
-from zrb.task.any_task import AnyTask
 from zrb.task.any_task_event_handler import (
     OnFailed, OnReady, OnRetry, OnSkipped, OnStarted, OnTriggered, OnWaiting
 )
@@ -11,6 +10,25 @@ from zrb.task_group.group import Group
 from zrb.task_input.any_input import AnyInput
 from ..agent import Agent
 from ..tools import query_internet, run_shell_command
+
+
+class ToolFactory():
+    def __init__(self, factory: Callable[..., Any], *args: Any, **kwargs: Any):
+        self._factory = factory
+        self._args = args
+        self._kwargs = kwargs
+        self._task: Optional[AnyTask] = None
+
+    def set_task(self, task: AnyTask):
+        self._task = task
+
+    def get_tool(self):
+        args = [self._task.render_anY(arg) for arg in self._args]
+        kwargs = {
+            self._task.render_str(key): self._task.render_any(value)
+            for key, value in self._kwargs.items()
+        }
+        return self._factory(*args, **kwargs)
 
 
 class LLMTask(Task):
@@ -30,7 +48,8 @@ class LLMTask(Task):
         system_message_template: Optional[str] = None,
         system_prompt: Optional[Any] = None,
         previous_messages: Optional[List[Any]] = None,
-        tools: List[Callable] = [query_internet, run_shell_command],
+        tools: Iterable[Callable] = [query_internet, run_shell_command],
+        tool_factories: Iterable[ToolFactory] = [],
         max_iteration: Union[int, str] = 10,
         agent_kwargs: Mapping[str, Any] = {},
         user_message: str = "Who are you?",
@@ -78,6 +97,9 @@ class LLMTask(Task):
         self._system_prompt = system_prompt
         self._previous_messages = previous_messages
         self._tools = tools
+        for factory in tool_factories:
+            factory.set_task(self)
+        self._tool_factories = tool_factories
         self._max_iteration = max_iteration
         self._agent_kwargs = agent_kwargs
         self._user_message = user_message
@@ -88,7 +110,9 @@ class LLMTask(Task):
             system_message_template=self.render_str(self._system_message_template),
             system_prompt=self.render_str(self._system_prompt),
             previous_messages=self._previous_messages,
-            tools=self._tools,
+            tools=self._tools + [
+                factory.get_tool() for factory in self._tool_factories
+            ],
             max_iteration=self.render_int(self._max_iteration),
             print_fn=self.print_out_dark,
             **{

@@ -7,9 +7,9 @@ import os
 
 
 def create_rag(
-    rag_description: str,
+    tool_name: str,
+    tool_description: str,
     documents: Iterable[str | Callable[[], str]] = [],
-    rag_name: str = "retrieve",
     model: str = "ollama/nomic-embed-text",
     vector_db_path: str = "./chroma",
     vector_db_collection: str = "documents",
@@ -65,8 +65,8 @@ def create_rag(
             n_results=max_result_count
         )
         return json.dumps(results)
-    retrieve.__name__ = rag_name
-    retrieve.__doc__ = rag_description
+    retrieve.__name__ = tool_name
+    retrieve.__doc__ = tool_description
     return retrieve
 
 
