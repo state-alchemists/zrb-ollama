@@ -112,7 +112,7 @@ class Conversation():
         self._print_all_instructions()
         while True:
             try:
-                user_input = self._read_input()
+                user_input = self._read_user_message()
                 if user_input.lower() in ["/bye", "/quit", "/q", "/exit"]:
                     self._print_dark("Bye")
                     return
@@ -187,17 +187,17 @@ class Conversation():
         def getter():
             with open(file_path, 'r', encoding="utf-8") as f:
                 content = f.read()
-            return content 
+            return content
         return getter
 
-    def _read_input(self) -> str:
+    def _read_user_message(self) -> str:
         if self._initial_user_input != "":
             line = self._initial_user_input
             self._initial_user_input = ""
             return line
         if not self._is_multiline_mode:
             self._print_green("\nEnter your input:")
-        return sys.stdin.readline().strip()
+        return self._read_input()
 
     def _process_input(self, line: str) -> Union[str, None]:
         if self._is_multiline_mode:
@@ -213,102 +213,10 @@ class Conversation():
         if (
             self._process_help_command(line) or
             self._process_model_command(line) or
-            self._process_tool_command(line) or
-            self._process_diff_command(line) or
-            self._process_rag_command(line)
+            self._process_tool_command(line)
         ):
             return
         return line
-
-    def _process_diff_command(self, line: str) -> bool:
-        if line.lower().startswith("/git-diff tool-name"):
-            arg = self._get_command_argument("/git-diff tool-name", line)
-            if arg != "":
-                self._diff_tool_name = arg
-            self._print_green_indented(f"Git Diff Tool Name: {self._diff_tool_name}")
-            return True
-        if line.lower().startswith("/git-diff tool-description"):
-            arg = self._get_command_argument("/git-diff tool-description", line)
-            if arg != "":
-                self._diff_tool_description = arg
-            self._print_green_indented(f"Git Diff Tool Description: {self._diff_tool_description}")  # noqa
-            return True
-        if line.lower().startswith("/git-diff repo-directory"):
-            arg = self._get_command_argument("/git-diff new-branch", line)
-            if arg != "":
-                self._diff_repo_directory = arg
-            self._print_green_indented(f"Git Diff Repo Directory: {self._diff_repo_directory}")  # noqa
-            return True
-        if line.lower().startswith("/git-diff initial-branch"):
-            arg = self._get_command_argument("/git-diff new-branch", line)
-            if arg != "":
-                self._diff_initial_branch = arg
-            self._print_green_indented(f"Git Diff Initial Branch: {self._diff_initial_branch}")  # noqa
-            return True
-        if line.lower().startswith("/git-diff new-branch"):
-            arg = self._get_command_argument("/git-diff new-branch", line)
-            if arg != "":
-                self._diff_initial_branch = arg
-            self._print_green_indented(f"Git Diff New Branch: {self._diff_new_branch}")
-            return True
-        return False
-
-    def _process_rag_command(self, line: str) -> bool:
-        if line.lower().startswith("/rag tool-name"):
-            arg = self._get_command_argument("/rag tool-name", line)
-            if arg != "":
-                self._rag_tool_name = arg
-            self._print_green_indented(f"RAG Tool Name: {self._rag_tool_name}")
-            return True
-        if line.lower().startswith("/rag tool-description"):
-            arg = self._get_command_argument("/rag tool-description", line)
-            if arg != "":
-                self._rag_tool_description = arg
-            self._print_green_indented(f"RAG Tool Name: {self._rag_tool_description}")
-            return True
-        if line.lower().startswith("/rag document-directory"):
-            arg = self._get_command_argument("/rag document-directory", line)
-            if arg != "":
-                self._rag_document_directory = arg
-            self._print_green_indented(f"RAG Document Directory: {self._rag_document_directory}")  # noqa
-            return True
-        if line.lower().startswith("/rag embedding-model"):
-            arg = self._get_command_argument("/rag embedding-model", line)
-            if arg != "":
-                self._rag_embedding_model = arg
-            self._print_green_indented(f"RAG Embedding Model: {self._rag_embedding_model}")  # noqa
-            return True
-        if line.lower().startswith("/rag vector-db-path"):
-            arg = self._get_command_argument("/rag vector-db-path", line)
-            if arg != "":
-                self._rag_vector_db_path = arg
-            self._print_green_indented(f"RAG Vector DB Path: {self._rag_vector_db_path}")  # noqa
-            return True
-        if line.lower().startswith("/rag vector-db-collection"):
-            arg = self._get_command_argument("/rag vector-db-collection", line)
-            if arg != "":
-                self._rag_vector_db_collection = arg
-            self._print_green_indented(f"RAG Vector DB Collection: {self._rag_vector_db_collection}")  # noqa
-            return True
-        if line.lower().startswith("/rag chunk-size"):
-            arg = self._get_command_argument("/rag chunk-size", line)
-            if arg != "":
-                self._rag_chunk_size = int(arg)
-            self._print_green_indented(f"RAG Chunk Size: {self._rag_chunk_size}")
-            return True
-        if line.lower().startswith("/rag overlap"):
-            arg = self._get_command_argument("/rag overlap", line)
-            if arg != "":
-                self.rag_overlap = int(arg)
-            self._print_green_indented(f"RAG Overlap: {self._rag_overlap}")
-            return True
-        if line.lower().startswith("/rag-max result-count"):
-            arg = self._get_command_argument("/rag max-result-count", line)
-            if arg != "":
-                self._rag_max_result_count = int(arg)
-            self._print_green_indented(f"RAG Max Result: {self._rag_max_result_count}")
-            return True
-        return False
 
     def _process_help_command(self, line: str) -> bool:
         if line.lower() in ["/?", "/help"]:
@@ -324,25 +232,85 @@ class Conversation():
             self._print_available_tool_names()
             return True
         if line.lower().startswith("/tool add"):
-            tool_name = line[len("/tool add"):].strip()
+            tool_name = self._get_subcommand("/tool add", line)
+            if tool_name == "rag":
+                self._ask_rag_param()
+            if tool_name == "git_diff":
+                self._ask_git_diff_param()
             self._activate_tool(tool_name)
             return True
         if line.lower().startswith("/tool rm"):
-            tool_name = line[len("/tool rm"):].strip()
+            tool_name = self._get_subcommand("/tool rm", line)
             self._deactivate_tool(tool_name)
             return True
         return False
 
+    def _ask_rag_param(self):
+        self._rag_tool_name = self._read_param(
+            "RAG Tool Name", self._rag_tool_name
+        )
+        self._rag_tool_description = self._read_param(
+            "RAG Tool Description", self._rag_tool_description
+        )
+        self._rag_document_directory = self._read_param(
+            "RAG Tool Description", self._rag_document_directory
+        )
+        self._rag_embedding_model = self._read_param(
+            "RAG Embedding Model", self._rag_embedding_model
+        )
+        self._rag_vector_db_path = self._read_param(
+            "RAG Vector DB Path", self._rag_vector_db_path
+        )
+        self._rag_vector_db_collection = self._read_param(
+            "RAG Vector DB Collection", self._rag_vector_db_collection
+        )
+        self._rag_chunk_size = int(self._read_param(
+            "RAG Chunk Size", self._rag_chunk_size
+        ))
+        self._rag_overlap = int(self._read_param(
+            "RAG Overlap", self._rag_overlap
+        ))
+        self._rag_max_result_count = int(self._read_param(
+            "RAG Max Result Count", self._rag_max_result_count
+        ))
+
+    def _ask_git_diff_param(self):
+        self._diff_tool_name = self._read_param(
+            "Git Diff Tool Name", self._diff_tool_name
+        )
+        self._diff_tool_description = self._read_param(
+            "Git Diff Tool Description", self._diff_tool_description
+        )
+        self._diff_repo_directory = self._read_param(
+            "Git Diff Repo Directory", self._diff_repo_directory
+        )
+        self._diff_initial_branch = self._read_param(
+            "Git Diff Initial Branch", self._diff_initial_branch
+        )
+        self._diff_new_branch = self._read_param(
+            "Git Diff New Branch", self._diff_new_branch
+        )
+
     def _process_model_command(self, line: str) -> bool:
         if line.lower().startswith("/model"):
-            arg = self._get_command_argument("/model", line)
+            arg = self._get_subcommand("/model", line)
             if arg != "":
                 self._model = arg
             self._print_green_indented(f"Model: {self._model}")
             return True
         return False
 
-    def _get_command_argument(self, command: str, line: str) -> str:
+    def _read_param(self, caption: str, default_value: str) -> str:
+        self._print_green(f"{caption} [{default_value}]:")
+        new_value = self._read_input()
+        if new_value != "":
+            return new_value
+        return f"{default_value}"
+
+    def _read_input(self) -> str:
+        return sys.stdin.readline().strip()
+
+    def _get_subcommand(self, command: str, line: str) -> str:
         lower_line = line.lower().lower()
         lower_command = command.lower()
         if len(lower_line) > len(lower_command) and lower_line.startswith(lower_command):  # noqa
@@ -390,22 +358,6 @@ class Conversation():
         self._print_instruction("/tool all", "Get list of available tools")
         self._print_instruction("/tool add <tool-name>", "activate tool")
         self._print_instruction("/tool rm <tool-name>", "deactivate tool")
-        print(file=sys.stderr)
-        self._print_instruction("/rag tool-name [tool-name]", "Get/set RAG tool name")
-        self._print_instruction("/rag tool-description [description]", "Get/set RAG tool description")  # noqa
-        self._print_instruction("/rag document-directory [directory]", "Get/set RAG document directory")  # noqa
-        self._print_instruction("/rag embedding-model [embedding-model]", "Get/set RAG embedding model (e.g., ollama/nomic-embed-text, text-embedding-ada-002)")  # noqa
-        self._print_instruction("/rag vector-db-path [directory]", "Get/set RAG Vector DB path")  # noqa
-        self._print_instruction("/rag vector-db-collection [collection]", "Get/set RAG Vector DB collection")  # noqa
-        self._print_instruction("/rag chunk-size [chunk-size]", "Get/set RAG chunk size")  # noqa
-        self._print_instruction("/rag overlap [overlap]", "Get/set RAG overlap size")
-        self._print_instruction("/rag max-result-count [count]", "Get/set RAG maximum result count")  # noqa
-        print(file=sys.stderr)
-        self._print_instruction("/git-diff tool-name [tool-name]", "Get/set Git Diff tool name")  # noqa
-        self._print_instruction("/git-diff tool-description [description]", "Get/set Git Diff tool description")  # noqa
-        self._print_instruction("/git-diff repo-directory [directory]", "Get/set Git Diff repository directory")  # noqa
-        self._print_instruction("/git-diff initial-branch [branch]", "Get/set Git Diff initial branch")  # noqa
-        self._print_instruction("/git-diff new-branch [branch]", "Get/set Git Diff new branch")  # noqa
 
     def _print_instruction(self, instruction: str, description: str):
         padded_instruction = instruction.ljust(40)

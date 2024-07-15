@@ -14,7 +14,7 @@ _EMBEDDING_MODEL = os.getenv("EXAMPLE_EMBEDDING_MODEL", "ollama/nomic-embed-text
 ##################################################################################
 
 def get_article():
-    with open(os.path.join(_CURRENT_DIR, "john-titor.md")) as f:
+    with open(os.path.join(_CURRENT_DIR, "rag", "document", "john-titor.md")) as f:
         return f.read()
 
 
@@ -37,7 +37,7 @@ rag = LLMTask(
             documents=[get_article],
             # model="text-embedding-ada-002",
             model=_EMBEDDING_MODEL,
-            vector_db_path=os.path.join(_CURRENT_DIR, "john-titor-vector"),
+            vector_db_path=os.path.join(_CURRENT_DIR, "rag", "vector"),
         )
     ]
 )
