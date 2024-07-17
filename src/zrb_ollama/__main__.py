@@ -101,7 +101,12 @@ class Conversation():
             self._initial_user_input = ""
             return line
         if not self._is_multiline_mode:
-            self._print_green("\nEnter your input:")
+            print(
+                colored(">> ", color="green", attrs=["bold"]),
+                file=sys.stderr,
+                flush=True,
+                end=""
+            )
         return self._read_input()
 
     def _process_input(self, line: str) -> Union[str, None]:
@@ -120,6 +125,10 @@ class Conversation():
             self._process_model_command(line) or
             self._process_tool_command(line)
         ):
+            return
+        if line.startswith("/"):
+            self._print_red_indented(f"Unknown command {line}")
+            self._print_all_instructions()
             return
         return line
 
@@ -303,7 +312,7 @@ class Conversation():
         self._print_instruction("/tool rm <tool-name>", "Remove tool")
 
     def _print_instruction(self, instruction: str, description: str):
-        padded_instruction = instruction.ljust(40)
+        padded_instruction = instruction.ljust(22)
         print(
             " ".join([
                 colored(f"    {padded_instruction}", color="yellow"),
