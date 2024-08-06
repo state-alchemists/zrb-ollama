@@ -12,7 +12,7 @@ keywords = ["Ollama", "OpenAI", "Bedrock"]
 
 [tool.poetry.dependencies]
 python = ">=3.10.0,<4.0.0"
-zrb = ">=0.23.0"
+zrb = ">=0.23.3"
 beautifulsoup4 = "~=4.12.3"
 litellm = "~=1.40.25"
 requests = "~2.31.0"
