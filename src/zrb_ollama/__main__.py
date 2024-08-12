@@ -2,7 +2,7 @@ import asyncio
 import os
 import sys
 
-from typing import Union, List
+from typing import Union
 from zrb.helper.accessories.color import colored
 from zrb.helper.util import to_snake_case
 from .agent import Agent
@@ -40,7 +40,7 @@ class Conversation():
     def __init__(
         self,
         model: str,
-        tool_names: List[str],
+        tool_names: list[str],
         initial_user_input: str,
         default_rag_embedding_model: str,
         default_rag_chunk_size: int,

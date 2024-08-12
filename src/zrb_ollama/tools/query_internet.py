@@ -19,4 +19,4 @@ def query_internet(query: str, num_results: int = 10) -> str:
             f"Error: Unable to retrieve search results (status code: {response.status_code})"  # noqa
         )
     soup = BeautifulSoup(response.text, 'html.parser')
-    return soup.get_text()
+    return soup.get_text(separator=" ", strip=True)

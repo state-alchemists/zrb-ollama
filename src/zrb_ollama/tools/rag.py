@@ -1,4 +1,4 @@
-from typing import Callable, Iterable
+from collections.abc import Callable, Iterable
 from zrb.helper.accessories.color import colored
 from zrb.helper.callable import run_async
 import litellm

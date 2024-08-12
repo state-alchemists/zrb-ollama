@@ -2,7 +2,8 @@ import json
 import re
 import litellm
 import traceback
-from typing import List, Mapping, Any, Callable, Optional
+from typing import Any
+from collections.abc import Callable, Mapping, Optional
 from zrb.helper.callable import run_async
 
 from .helper import extract_metadata, get_metadata_signature, get_metadata_description
@@ -50,8 +51,8 @@ class Agent():
         model: str,
         system_message_template: Optional[Any] = None,
         system_prompt: Optional[Any] = None,
-        previous_messages: Optional[List[Any]] = None,
-        tools: List[Callable] = [],
+        previous_messages: Optional[list[Any]] = None,
+        tools: list[Callable] = [],
         max_iteration: int = 10,
         should_show_system_prompt: bool = False,
         should_show_history: bool = False,
@@ -119,10 +120,10 @@ class Agent():
     def get_system_message(self) -> Any:
         return self._system_message
 
-    def get_history(self) -> List[Any]:
+    def get_history(self) -> list[Any]:
         return self._previous_messages
 
-    async def add_user_message(self, user_message: Any) -> List[Any]:
+    async def add_user_message(self, user_message: Any) -> list[Any]:
         self._append_message({"role": "user", "content": user_message})
         if self._should_show_system_prompt:
             self._print("📜 System prompt")
@@ -179,7 +180,7 @@ class Agent():
         })
 
     def _append_function_call_error(
-        self, function: str, arguments: List[str], exc: Exception
+        self, function: str, arguments: list[str], exc: Exception
     ):
         self._append_message({
             "role": "user",
@@ -192,7 +193,7 @@ class Agent():
         })
 
     def _append_function_call_ok(
-        self, function_name: str, arguments: List[str], result: Any
+        self, function_name: str, arguments: list[str], result: Any
     ):
         self._append_message({
             "role": "user",

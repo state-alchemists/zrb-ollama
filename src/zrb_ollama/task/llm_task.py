@@ -1,6 +1,7 @@
 from typing import Iterable
 from zrb import AnyTask, Task
-from zrb.helper.typing import Any, Callable, List, Mapping, Optional, Union
+from typing import Any
+from collections.abc import Callable, Mapping, Optional, Union
 from zrb.task.any_task_event_handler import (
     OnFailed, OnReady, OnRetry, OnSkipped, OnStarted, OnTriggered, OnWaiting
 )
@@ -37,7 +38,7 @@ class LLMTask(Task):
         name: str,
         group: Optional[Group] = None,
         description: str = "",
-        inputs: List[AnyInput] = [],
+        inputs: list[AnyInput] = [],
         envs: Iterable[Env] = [],
         env_files: Iterable[EnvFile] = [],
         icon: Optional[str] = None,
@@ -47,7 +48,7 @@ class LLMTask(Task):
         model: Optional[str] = "ollama/mistral:7b-instruct",
         system_message_template: Optional[str] = None,
         system_prompt: Optional[Any] = None,
-        previous_messages: Optional[List[Any]] = None,
+        previous_messages: Optional[list[Any]] = None,
         tools: Iterable[Callable] = [query_internet, run_shell_command],
         tool_factories: Iterable[ToolFactory] = [],
         max_iteration: Union[int, str] = 10,
