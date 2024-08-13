@@ -1,25 +1,32 @@
 import asyncio
 import os
 import sys
-
 from typing import Union
+
 from zrb.helper.accessories.color import colored
 from zrb.helper.util import to_snake_case
+
 from .agent import Agent
 from .tools import (
-    run_shell_command,
-    query_internet,
+    create_get_changes,
+    create_rag,
     get_current_location,
     get_current_weather,
-    create_rag,
-    create_get_changes
+    open_web_page,
+    query_internet,
+    run_shell_command,
 )
 
 
 def prompt():
     model = os.getenv("LLM_MODEL", "ollama/mistral:7b-instruct")
     initial_user_input = "" if len(sys.argv) <= 1 else " ".join(sys.argv[1:])
-    tool_names = [name.strip() for name in os.getenv("TOOLS", "query_internet, run_shell_command").split(",")]  # noqa
+    tool_names = [
+        name.strip()
+        for name in os.getenv(
+            "TOOLS", "query_internet,open_web_page, run_shell_command"
+        ).split(",")
+    ]  # noqa
     rag_embedding_model = os.getenv("RAG_EMBEDDING_MODEL", "ollama/nomic-embed-text")
     rag_chunk_size = int(os.getenv("RAG_CHUNK_SIZE", "1024"))
     rag_overlap = int(os.getenv("RAG_OVERLAP", "256"))
@@ -36,7 +43,7 @@ def prompt():
     asyncio.run(conversation.loop())
 
 
-class Conversation():
+class Conversation:
     def __init__(
         self,
         model: str,
@@ -59,6 +66,7 @@ class Conversation():
         self._tool_names = tool_names
         self._available_tools = {
             "query_internet": query_internet,
+            "open_web_page": open_web_page,
             "run_shell_command": run_shell_command,
             "get_current_location": get_current_location,
             "get_current_weather": get_current_weather,
@@ -105,7 +113,7 @@ class Conversation():
                 colored(">> ", color="green", attrs=["bold"]),
                 file=sys.stderr,
                 flush=True,
-                end=""
+                end="",
             )
         return self._read_input()
 
@@ -121,9 +129,9 @@ class Conversation():
             self._mutiline_user_inputs = []
             return
         if (
-            self._process_help_command(line) or
-            self._process_model_command(line) or
-            self._process_tool_command(line)
+            self._process_help_command(line)
+            or self._process_model_command(line)
+            or self._process_tool_command(line)
         ):
             return
         if line.startswith("/"):
@@ -177,13 +185,13 @@ class Conversation():
             "RAG Vector DB Path", f"{document_directory}-vector"
         )
         vector_db_collection = self._read_param("RAG Vector DB Collection", "documents")
-        chunk_size = int(self._read_param(
-            "RAG Chunk Size", self._default_rag_chunk_size
-        ))
+        chunk_size = int(
+            self._read_param("RAG Chunk Size", self._default_rag_chunk_size)
+        )
         overlap = int(self._read_param("RAG Overlap", self._default_rag_overlap))
-        max_result_count = int(self._read_param(
-            "RAG Max Result Count", self._default_rag_max_result_count
-        ))
+        max_result_count = int(
+            self._read_param("RAG Max Result Count", self._default_rag_max_result_count)
+        )
         self._tool_names.append(tool_name)
         self._available_tools[tool_name] = create_rag(
             tool_name=tool_name,
@@ -194,7 +202,7 @@ class Conversation():
             vector_db_collection=vector_db_collection,
             chunk_size=chunk_size,
             overlap=overlap,
-            max_result_count=max_result_count
+            max_result_count=max_result_count,
         )
 
     def _get_rag_documents(self, directory):
@@ -208,9 +216,10 @@ class Conversation():
 
     def _get_text_reader(self, file_path: str):
         def getter():
-            with open(file_path, 'r', encoding="utf-8") as f:
+            with open(file_path, "r", encoding="utf-8") as f:
                 content = f.read()
             return content
+
         return getter
 
     def _add_git_diff_tool(self):
@@ -244,10 +253,12 @@ class Conversation():
 
     def _read_param(self, caption: str, default_value: str) -> str:
         print(
-            " ".join([
-                colored(caption, color="green"),
-                colored(f"[{default_value}]: ", attrs=["dark"]),
-            ]),
+            " ".join(
+                [
+                    colored(caption, color="green"),
+                    colored(f"[{default_value}]: ", attrs=["dark"]),
+                ]
+            ),
             file=sys.stderr,
             end="",
             flush=True,
@@ -263,8 +274,10 @@ class Conversation():
     def _get_subcommand(self, command: str, line: str) -> str:
         lower_line = line.lower().lower()
         lower_command = command.lower()
-        if len(lower_line) > len(lower_command) and lower_line.startswith(lower_command):  # noqa
-            return line[len(lower_command):].strip()
+        if len(lower_line) > len(lower_command) and lower_line.startswith(
+            lower_command
+        ):  # noqa
+            return line[len(lower_command) :].strip()
         return ""
 
     def _add_tool(self, tool_name):
@@ -304,7 +317,10 @@ class Conversation():
         self._print_instruction("/bye", "Quit")
         self._print_instruction("/multi", "Start multiline mode")
         self._print_instruction("/end", "Stop multiline mode")
-        self._print_instruction("/model [model]", "Get/set current model (e.g., ollama/mistral:7b-instruct, gpt-4o)")  # noqa
+        self._print_instruction(
+            "/model [model]",
+            "Get/set current model (e.g., ollama/mistral:7b-instruct, gpt-4o)",
+        )  # noqa
         print(file=sys.stderr)
         self._print_instruction("/tool", "Get list of tools")
         self._print_instruction("/tool all", "Get list of available tools")
@@ -314,11 +330,13 @@ class Conversation():
     def _print_instruction(self, instruction: str, description: str):
         padded_instruction = instruction.ljust(22)
         print(
-            " ".join([
-                colored(f"    {padded_instruction}", color="yellow"),
-                colored(description, attrs=["dark"]),
-            ]),
-            file=sys.stderr
+            " ".join(
+                [
+                    colored(f"    {padded_instruction}", color="yellow"),
+                    colored(description, attrs=["dark"]),
+                ]
+            ),
+            file=sys.stderr,
         )
 
     def _print_dark_indented(self, text: str):

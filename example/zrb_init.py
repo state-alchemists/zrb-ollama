@@ -1,8 +1,8 @@
-from zrb import runner, CmdTask, StrInput
-from zrb_ollama import LLMTask, ToolFactory
-from zrb_ollama.tools import query_internet, create_rag, create_get_changes
-
 import os
+
+from zrb import CmdTask, StrInput, runner
+from zrb_ollama import LLMTask, ToolFactory
+from zrb_ollama.tools import create_get_changes, create_rag, query_internet
 
 _CURRENT_DIR = os.path.dirname(__file__)
 _MODEL = os.getenv("EXAMPLE_MODEL", "ollama/mistral:7b-instruct")
@@ -12,6 +12,7 @@ _EMBEDDING_MODEL = os.getenv("EXAMPLE_EMBEDDING_MODEL", "ollama/nomic-embed-text
 ##################################################################################
 # RAG Demo
 ##################################################################################
+
 
 def get_article():
     with open(os.path.join(_CURRENT_DIR, "rag", "document", "john-titor.md")) as f:
@@ -26,9 +27,7 @@ rag = LLMTask(
     # model="gpt-4o",
     model=_MODEL,
     user_message="{{input.user_prompt}}",
-    tools=[
-        query_internet
-    ],
+    tools=[query_internet],
     tool_factories=[
         ToolFactory(
             create_rag,
@@ -39,7 +38,7 @@ rag = LLMTask(
             model=_EMBEDDING_MODEL,
             vector_db_path=os.path.join(_CURRENT_DIR, "rag", "vector"),
         )
-    ]
+    ],
 )
 runner.register(rag)
 
@@ -75,7 +74,7 @@ code_review = LLMTask(
         StrInput(name="new-branch", default="feat/iterative"),
         StrInput(
             name="user-prompt",
-            default="In .sample-repo, code review the changes and make suggestions if necessary."  # noqa
+            default="In .sample-repo, code review the changes and make suggestions if necessary.",  # noqa
         ),
     ],
     # model="gpt-4o",
@@ -93,7 +92,7 @@ code_review = LLMTask(
             initial_branch="{{input.initial_branch}}",
             new_branch="{{input.new_branch}}",
         )
-    ]
+    ],
 )
 prepare_repo >> code_review
 runner.register(code_review)

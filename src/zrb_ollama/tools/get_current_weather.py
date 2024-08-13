@@ -1,6 +1,7 @@
 import json
-import requests
 from typing import Literal
+
+import requests
 
 
 def get_current_weather(

@@ -1,18 +1,22 @@
 import json
 import re
-import litellm
 import traceback
-from typing import Any
-from collections.abc import Callable, Mapping, Optional
+from collections.abc import Callable, Mapping
+from typing import Any, Optional
+
+import litellm
 from zrb.helper.callable import run_async
 
-from .helper import extract_metadata, get_metadata_signature, get_metadata_description
+from .helper import extract_metadata, get_metadata_description, get_metadata_signature
 
-DEFAULT_SYSTEM_PROMPT: str = """
+DEFAULT_SYSTEM_PROMPT: str = (
+    """
 You are a helpful assistant.
 """.strip()
+)
 
-DEFAULT_SYSTEM_MESSAGE_TEMPLATE: str = """
+DEFAULT_SYSTEM_MESSAGE_TEMPLATE: str = (
+    """
 {system_prompt}
 
 You are designed to respond in a specific JSON format. Your responses MUST ALWAYS follow this structure:
@@ -42,9 +46,10 @@ If you receive an error:
 
 REMINDER: ALWAYS double-check your response format and function arguments before submitting.
 """.strip()
+)
 
 
-class Agent():
+class Agent:
 
     def __init__(
         self,
@@ -65,6 +70,7 @@ class Agent():
             """
             self._finished = True
             return final_answer
+
         self._model = model
         self._tools = [finish_conversation] + tools
         self._max_iteration = max_iteration
@@ -94,8 +100,8 @@ class Agent():
                 "arguments": {
                     "<argument-1>": "<value-1>",
                     "<argument-2>": "<value-2>",
-                }
-            }
+                },
+            },
         }
         self._system_message = {
             "role": "system",
@@ -103,17 +109,26 @@ class Agent():
                 system_prompt=system_prompt,
                 response_format=json.dumps(self._response_format, indent=2),
                 function_names=", ".join(self._function_names),
-                function_signatures="\n".join([
-                    "\n".join([
-                        f"- {signature}",
-                        "  " + get_metadata_description(self._function_schemas[fn_name])
-                    ]).strip()
-                    for fn_name, signature in self._function_signatures.items()
-                ]),
+                function_signatures="\n".join(
+                    [
+                        "\n".join(
+                            [
+                                f"- {signature}",
+                                "  "
+                                + get_metadata_description(
+                                    self._function_schemas[fn_name]
+                                ),
+                            ]
+                        ).strip()
+                        for fn_name, signature in self._function_signatures.items()
+                    ]
+                ),
                 function_schemas=json.dumps(self._function_schemas, indent=2),
             ),
         }
-        self._previous_messages = previous_messages if previous_messages is not None else []  # noqa
+        self._previous_messages = (
+            previous_messages if previous_messages is not None else []
+        )  # noqa
         self._messages = [self._system_message] + self._previous_messages
         self._finished = False
 
@@ -142,9 +157,9 @@ class Agent():
             try:
                 response_map = self._extract_agent_message(response_message.content)
                 self._validate_agent_message(response_map)
-                self._append_message({
-                    "role": "assistant", "content": json.dumps(response_map)
-                })
+                self._append_message(
+                    {"role": "assistant", "content": json.dumps(response_map)}
+                )
             except Exception as exc:
                 self._print(f"🛑 Error {exc}")
                 traceback.print_exc()
@@ -171,39 +186,51 @@ class Agent():
         return None
 
     def _append_feedback_error(self, exc: Exception):
-        self._append_message({
-            "role": "user",
-            "content": json.dumps({
-                "type": "feedback_error",
-                "error": self._extract_exception(exc),
-            })
-        })
+        self._append_message(
+            {
+                "role": "user",
+                "content": json.dumps(
+                    {
+                        "type": "feedback_error",
+                        "error": self._extract_exception(exc),
+                    }
+                ),
+            }
+        )
 
     def _append_function_call_error(
         self, function: str, arguments: list[str], exc: Exception
     ):
-        self._append_message({
-            "role": "user",
-            "content": json.dumps({
-                "type": "feedback_error",
-                "function": function,
-                "arguments": arguments,
-                "error": self._extract_exception(exc),
-            })
-        })
+        self._append_message(
+            {
+                "role": "user",
+                "content": json.dumps(
+                    {
+                        "type": "feedback_error",
+                        "function": function,
+                        "arguments": arguments,
+                        "error": self._extract_exception(exc),
+                    }
+                ),
+            }
+        )
 
     def _append_function_call_ok(
         self, function_name: str, arguments: list[str], result: Any
     ):
-        self._append_message({
-            "role": "user",
-            "content": json.dumps({
-                "type": "feedback_success",
-                "function": function_name,
-                "arguments": arguments,
-                "result": result,
-            })
-        })
+        self._append_message(
+            {
+                "role": "user",
+                "content": json.dumps(
+                    {
+                        "type": "feedback_success",
+                        "function": function_name,
+                        "arguments": arguments,
+                        "result": result,
+                    }
+                ),
+            }
+        )
 
     def _append_message(self, message: Any):
         self._previous_messages.append(message)
@@ -223,12 +250,14 @@ class Agent():
         self, function_name: str, kwargs: Mapping[str, Any]
     ) -> Any:
         if function_name not in self._function_schemas:
-            raise self._map_to_exception({
-                "error": "INVALID FUNCTION",
-                "details": f"The function `{function_name}` is not a recognized",
-                "valid_functions": self._function_names,
-                "action_required": "Choose a valid function",
-            })
+            raise self._map_to_exception(
+                {
+                    "error": "INVALID FUNCTION",
+                    "details": f"The function `{function_name}` is not a recognized",
+                    "valid_functions": self._function_names,
+                    "action_required": "Choose a valid function",
+                }
+            )
         missing_arguments = []
         invalid_arguments = []
         # ensure all required arguments is provided
@@ -246,12 +275,14 @@ class Agent():
                 error_details["missing_arguments"] = missing_arguments
             if len(invalid_arguments) > 0:
                 error_details["invalid_arguments"] = invalid_arguments
-            raise self._map_to_exception({
-                "error": "INVALID ARGUMENTS",
-                "details": error_details,
-                "correct_function_schema": self._function_schemas[function_name],
-                "action_required": "Revise your response to include all required arguments and remove any invalid ones",  # noqa
-            })
+            raise self._map_to_exception(
+                {
+                    "error": "INVALID ARGUMENTS",
+                    "details": error_details,
+                    "correct_function_schema": self._function_schemas[function_name],
+                    "action_required": "Revise your response to include all required arguments and remove any invalid ones",  # noqa
+                }
+            )
 
     async def _execute_function(
         self, function_name: str, kwargs: Mapping[str, Any]
@@ -260,18 +291,20 @@ class Agent():
             function_map = self._function_map
             return await run_async(function_map[function_name], **kwargs)
         except Exception as exc:
-            raise self._map_to_exception({
-                "error": "EXECUTION FAILED",
-                "details": f"{exc}",
-                "correct_function_schema": self._function_schemas[function_name],
-                "action_required": "Revise your arguments",
-            })
+            raise self._map_to_exception(
+                {
+                    "error": "EXECUTION FAILED",
+                    "details": f"{exc}",
+                    "correct_function_schema": self._function_schemas[function_name],
+                    "action_required": "Revise your arguments",
+                }
+            )
 
     def _extract_agent_message(self, response_content) -> Mapping[str, Any]:
         try:
             return json.loads(response_content)
         except Exception:
-            json_pattern = re.compile(r'```(json)?\n({.*?})\n```', re.DOTALL)
+            json_pattern = re.compile(r"```(json)?\n({.*?})\n```", re.DOTALL)
             # Search for the pattern in the content
             match = json_pattern.search(response_content)
             if match:
@@ -283,11 +316,11 @@ class Agent():
             json_start = -1
             json_end = -1
             for i, char in enumerate(response_content):
-                if char == '{':
+                if char == "{":
                     if not brace_stack:
                         json_start = i
-                    brace_stack.append('{')
-                elif char == '}':
+                    brace_stack.append("{")
+                elif char == "}":
                     if brace_stack:
                         brace_stack.pop()
                         if not brace_stack:
@@ -300,12 +333,14 @@ class Agent():
                     return json.loads(json_str)
                 except Exception:
                     pass
-            raise self._map_to_exception({
-                "error": "MALFORMED PAYLOAD",
-                "error_message": "Your response does not match the required JSON format",  # noqa
-                "required_format": self._response_format,
-                "action_required": "Reformat your entire response to match the required_format",  # noqa
-            })
+            raise self._map_to_exception(
+                {
+                    "error": "MALFORMED PAYLOAD",
+                    "error_message": "Your response does not match the required JSON format",  # noqa
+                    "required_format": self._response_format,
+                    "action_required": "Reformat your entire response to match the required_format",  # noqa
+                }
+            )
 
     def _validate_agent_message(self, json_message: Mapping[str, Any]):
         error_details = []
@@ -319,18 +354,28 @@ class Agent():
             error_details.append("The `action` field is not an object")
         if "action" in json_message and isinstance(json_message["action"], dict):
             if "function" not in json_message["action"]:
-                error_details.append("The `function` field is missing from the `action` object")  # noqa
-            if "function" in json_message["action"] and not isinstance(json_message["action"]["function"], str):  # noqa
+                error_details.append(
+                    "The `function` field is missing from the `action` object"
+                )  # noqa
+            if "function" in json_message["action"] and not isinstance(
+                json_message["action"]["function"], str
+            ):  # noqa
                 error_details.append("The action's `function` field is not a string")
             if "arguments" not in json_message["action"]:
-                error_details.append("The `arguments` field is missing from the `action` object")  # noqa
-            if "arguments" in json_message["action"] and not isinstance(json_message["action"]["arguments"], dict):  # noqa
+                error_details.append(
+                    "The `arguments` field is missing from the `action` object"
+                )  # noqa
+            if "arguments" in json_message["action"] and not isinstance(
+                json_message["action"]["arguments"], dict
+            ):  # noqa
                 error_details.append("The action's `arguments` field is not an object")
         if len(error_details) > 0:
-            raise self._map_to_exception({
-                "error": "MALFORMED PAYLOAD",
-                "error_message": "The response payload is missing required information or contains invalid data",  # noqa
-                "details": error_details,
-                "required_format": self._response_format,
-                "action_required": "Reformat your entire response to match the required_format",  # noqa
-            })
+            raise self._map_to_exception(
+                {
+                    "error": "MALFORMED PAYLOAD",
+                    "error_message": "The response payload is missing required information or contains invalid data",  # noqa
+                    "details": error_details,
+                    "required_format": self._response_format,
+                    "action_required": "Reformat your entire response to match the required_format",  # noqa
+                }
+            )

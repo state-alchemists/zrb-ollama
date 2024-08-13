@@ -1,9 +1,10 @@
-from collections.abc import Callable, Iterable
-from zrb.helper.accessories.color import colored
-from zrb.helper.callable import run_async
-import litellm
 import json
 import os
+from collections.abc import Callable, Iterable
+
+import litellm
+from zrb.helper.accessories.color import colored
+from zrb.helper.callable import run_async
 
 
 def create_rag(
@@ -24,8 +25,7 @@ def create_rag(
     async def retrieve(query: str) -> str:
         is_db_exist = os.path.isdir(vector_db_path)
         client = chromadb.PersistentClient(
-            path=vector_db_path,
-            settings=Settings(allow_reset=True)
+            path=vector_db_path, settings=Settings(allow_reset=True)
         )
         if not is_db_exist or reset_db:
             chunks = []
@@ -34,7 +34,7 @@ def create_rag(
                 if callable(document):
                     document = await run_async(document)
                 for i in range(0, len(document), chunk_size - overlap):
-                    chunk = document[i:i + chunk_size]
+                    chunk = document[i : i + chunk_size]
                     if len(chunk) > 0:
                         chunks.append(chunk)
             # Generate embeddings and save to ChromaDB
@@ -62,9 +62,10 @@ def create_rag(
         # Search for the top_k most similar documents
         results = collection.query(
             query_embeddings=query_response["data"][0]["embedding"],
-            n_results=max_result_count
+            n_results=max_result_count,
         )
         return json.dumps(results)
+
     retrieve.__name__ = tool_name
     retrieve.__doc__ = tool_description
     return retrieve

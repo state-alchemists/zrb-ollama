@@ -1,19 +1,26 @@
-from typing import Iterable
+from collections.abc import Callable, Mapping
+from typing import Any, Iterable, Optional, Union
+
 from zrb import AnyTask, Task
-from typing import Any
-from collections.abc import Callable, Mapping, Optional, Union
 from zrb.task.any_task_event_handler import (
-    OnFailed, OnReady, OnRetry, OnSkipped, OnStarted, OnTriggered, OnWaiting
+    OnFailed,
+    OnReady,
+    OnRetry,
+    OnSkipped,
+    OnStarted,
+    OnTriggered,
+    OnWaiting,
 )
 from zrb.task_env.env import Env
 from zrb.task_env.env_file import EnvFile
 from zrb.task_group.group import Group
 from zrb.task_input.any_input import AnyInput
+
 from ..agent import Agent
 from ..tools import query_internet, run_shell_command
 
 
-class ToolFactory():
+class ToolFactory:
     def __init__(self, factory: Callable[..., Any], *args: Any, **kwargs: Any):
         self._factory = factory
         self._args = args
@@ -66,7 +73,7 @@ class LLMTask(Task):
         on_retry: Optional[OnRetry] = None,
         on_failed: Optional[OnFailed] = None,
         should_execute: bool | str | Callable[..., bool] = True,
-        return_upstream_result: bool = False
+        return_upstream_result: bool = False,
     ):
         super().__init__(
             name=name,
@@ -111,9 +118,8 @@ class LLMTask(Task):
             system_message_template=self.render_str(self._system_message_template),
             system_prompt=self.render_str(self._system_prompt),
             previous_messages=self._previous_messages,
-            tools=self._tools + [
-                factory.get_tool() for factory in self._tool_factories
-            ],
+            tools=self._tools
+            + [factory.get_tool() for factory in self._tool_factories],
             max_iteration=self.render_int(self._max_iteration),
             print_fn=self.print_out_dark,
             **{
