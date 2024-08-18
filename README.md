@@ -27,13 +27,9 @@ The default LLM is `ollama/mistral:7b-instruct`, while the default embedding LLM
 
 You can change this by setting the `model` parameter on `LLMTask` or the `create_rag` function. See [LiteLLM provider](https://docs.litellm.ai/docs/providers/) to use custom LLM.
 
-# CLI Command 
+# Interactive Mode 
 
-Zrb Ollama provides a simple CLI command so you can interact with the LLM immediately. The LLM has two tools:
-
-- query_internet
-- run_shell_command
-
+Zrb Ollama provides a simple CLI command so you can interact with the LLM immediately. 
 To interact with the LLM, you can invoke the following command.
 
 ```bash
@@ -149,19 +145,32 @@ print(result)
 
 # Configurations
 
+You can set Zrb Ollama configurations using environment variables.
+
 - `LLM_MODEL`
-    - default: `ollama/mistral:7b-instruct`
+    - Default: `ollama/mistral:7b-instruct`
+    - Description: Default LLM model for `LLMTask` and interactive mode. See [Lite LLM](https://docs.litellm.ai/docs/providers) for valid values.
 - `INTERACTIVE_ENABLED_TOOL_NAMES`
-    - default: `query_internet,open_web_page,run_shell_command`
+    - Default: `query_internet,open_web_page,run_shell_command`
+    - Description: Default tools enabled for interactive mode.
 - `RAG_EMBEDDING_MODEL`
-    - default: `ollama/nomic-embed-text`
+    - Default: `ollama/nomic-embed-text`
+    - Description: Default RAG embedding model for `LLMTask` and interactive mode. See [Lite LLM](https://docs.litellm.ai/docs/providers) for valid values.
 - `RAG_CHUNK_SIZE`
-    - default: `1024`
+    - Default: `1024`
+    - Description: Default chunk size for RAG.
 - `RAG_OVERLAP`
-    - default: `128`
+    - Default: `128`
+    - Description: Default chunk overlap size for RAG.
 - `RAG_MAX_RESULT_COUNT`
-    - default: `5`
+    - Default: `5`
+    - Description: Default result count for RAG.
 - `DEFAULT_SYSTEM_PROMPT`
-    - default: `You are a helpful assistant.`
+    - Default: `You are a helpful assistant.`
+    - Description: Default system prompt.
 - `DEFAULT_SYSTEM_MESSAGE_TEMPLATE`
-    - default: See 
+    - Default: See [config.py](https://github.com/state-alchemists/zrb-ollama/blob/main/src/zrb_ollama/config.py)
+    - Description: Default template for LLM's system message. Should contains the following:
+        - `{system_prompt}`
+        - `{response_format}`
+        - `{function_signatures}`
