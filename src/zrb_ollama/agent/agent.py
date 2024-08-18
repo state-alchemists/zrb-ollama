@@ -6,56 +6,20 @@ from typing import Any, Optional
 
 import litellm
 from zrb.helper.callable import run_async
+from zrb.helper.typecheck import typechecked
 
-from .helper import extract_metadata, get_metadata_description, get_metadata_signature
-
-DEFAULT_SYSTEM_PROMPT: str = (
-    """
-You are a helpful assistant.
-""".strip()
-)
-
-DEFAULT_SYSTEM_MESSAGE_TEMPLATE: str = (
-    """
-{system_prompt}
-
-You are designed to respond in a specific JSON format. Your responses MUST ALWAYS follow this structure:
-
-{response_format}
-
-CRITICAL: Failure to use this exact format will result in an error.
-
-Your goal is to find an accurate final_answer through a series of thoughts and actions.
-
-FUNCTION RULES:
-1. Only use functions listed in the FUNCTION SCHEMA below.
-2. Provide ALL required arguments for each function.
-3. Do not include extra or invalid arguments.
-4. Use finish_conversation ONLY when you have the final_answer or it's impossible to find one.
-
-FUNCTION SCHEMA:
-
-{function_signatures}
-
-ERROR HANDLING:
-If you receive an error:
-1. Read the error message carefully.
-2. Identify the specific issue (e.g., missing arguments, invalid format).
-3. Adjust your response accordingly.
-4. Perform the review process again before resubmitting.
-
-REMINDER: ALWAYS double-check your response format and function arguments before submitting.
-""".strip()
-)
+from ..config import DEFAULT_SYSTEM_PROMPT, DEFAULT_SYSTEM_MESSAGE_TEMPLATE
+from ._helper import extract_metadata, get_metadata_description, get_metadata_signature
 
 
+@typechecked
 class Agent:
 
     def __init__(
         self,
         model: str,
-        system_message_template: Optional[Any] = None,
-        system_prompt: Optional[Any] = None,
+        system_message_template: str = DEFAULT_SYSTEM_MESSAGE_TEMPLATE,
+        system_prompt: str = DEFAULT_SYSTEM_PROMPT,
         previous_messages: Optional[list[Any]] = None,
         tools: list[Callable] = [],
         max_iteration: int = 10,
@@ -79,10 +43,6 @@ class Agent:
         self._should_show_history = should_show_history
         self._return = ""
         self._print = print if print_fn is None else print_fn
-        if system_message_template is None:
-            system_message_template = DEFAULT_SYSTEM_MESSAGE_TEMPLATE
-        if system_prompt is None:
-            system_prompt = DEFAULT_SYSTEM_PROMPT
         self._function_schemas = {
             fn.__name__: extract_metadata(fn) for fn in self._tools
         }

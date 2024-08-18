@@ -2,22 +2,17 @@ import os
 
 from zrb import CmdTask, StrInput, runner
 from zrb_ollama import LLMTask, ToolFactory
-from zrb_ollama.tools import create_get_changes, create_rag, query_internet
+from zrb_ollama.tools import (
+    create_get_changes, create_rag, documents_from_directory, query_internet
+)
 
 _CURRENT_DIR = os.path.dirname(__file__)
-_MODEL = os.getenv("EXAMPLE_MODEL", "ollama/mistral:7b-instruct")
-_EMBEDDING_MODEL = os.getenv("EXAMPLE_EMBEDDING_MODEL", "ollama/nomic-embed-text")
+_RAG_DIR = os.path.join(_CURRENT_DIR, "rag")
 
 
 ##################################################################################
 # RAG Demo
 ##################################################################################
-
-
-def get_article():
-    with open(os.path.join(_CURRENT_DIR, "rag", "document", "john-titor.md")) as f:
-        return f.read()
-
 
 rag = LLMTask(
     name="rag",
@@ -25,7 +20,6 @@ rag = LLMTask(
         StrInput(name="user-prompt", default="How John Titor introduce himself?"),
     ],
     # model="gpt-4o",
-    model=_MODEL,
     user_message="{{input.user_prompt}}",
     tools=[query_internet],
     tool_factories=[
@@ -33,10 +27,10 @@ rag = LLMTask(
             create_rag,
             tool_name="retrieve_john_titor_info",
             tool_description="Look for anything related to John Titor",
-            documents=[get_article],
+            documents=documents_from_directory(os.path.join(_RAG_DIR, "document")),
             # model="text-embedding-ada-002",
-            model=_EMBEDDING_MODEL,
-            vector_db_path=os.path.join(_CURRENT_DIR, "rag", "vector"),
+            vector_db_path=os.path.join(_RAG_DIR, "vector"),
+            # reset_db=True,
         )
     ],
 )
@@ -78,7 +72,6 @@ code_review = LLMTask(
         ),
     ],
     # model="gpt-4o",
-    model=_MODEL,
     user_message="{{input.user_prompt}}",
     tools=[
         query_internet,

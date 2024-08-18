@@ -1,4 +1,5 @@
 import json
+from typing import Annotated
 
 import requests
 from bs4 import BeautifulSoup
@@ -6,7 +7,10 @@ from bs4 import BeautifulSoup
 from ._helper import parse_content
 
 
-def query_internet(query: str, num_results: int = 10) -> str:
+def query_internet(
+    query: Annotated[str, "Search query"],
+    num_results: Annotated[int, "Search result count, by default 10"] = 10,
+) -> str:
     """Search factual information from the internet."""
     response = requests.get(
         "https://google.com/search",

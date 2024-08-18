@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "zrb-ollama"
-version = "0.2.5"
+version = "0.2.6"
 description = "Zrb LLM plugin"
 authors = ["Go Frendi <gofrendiasgard@gmail.com>"]
 license = "AGPL-3.0-or-later"
@@ -9,6 +9,7 @@ homepage = "https://github.com/state-alchemists/zrb-ollama"
 repository = "https://github.com/state-alchemists/zrb-ollama"
 documentation = "https://github.com/state-alchemists/zrb-ollama"
 keywords = ["Ollama", "OpenAI", "Bedrock"]
+exclude = ["example"]
 
 [tool.poetry.dependencies]
 python = ">=3.10.0,<4.0.0"
@@ -18,6 +19,7 @@ litellm = "~=1.40.25"
 requests = "~2.31.0"
 boto3 = {version = "~1.34.140", optional = true}
 chromadb= {version = "~0.5.3", optional = true}
+pdfplumber = "^0.11.3"
 
 [tool.poetry.extras]
 # poetry install -E aws -E chromadb

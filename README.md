@@ -40,45 +40,70 @@ To interact with the LLM, you can invoke the following command.
 zrb-ollama
 ```
 
+To enhance `zrb-ollama` with tools, you can create a file named `zrb_ollama_init.py` and register the tools:
+
+```python
+import os
+from zrb_ollama import interactive_tools
+from zrb_ollama.tools import create_rag, documents_from_directory
+
+
+_CURRENT_DIR = os.path.dirname(__file__)
+
+retrieve_john_titor_info = create_rag(
+    tool_name='retrieve_john_titor_info',
+    tool_description="Look for anything related to John Titor",
+    documents=documents_from_directory(os.path.join(_CURRENT_DIR, "rag", "document")),
+    vector_db_path=os.path.join(_CURRENT_DIR, "rag", "vector"),
+    # reset_db=True,
+)
+interactive_tools.register(retrieve_john_titor_info)
+```
+
+
 # Using LLMTask
 
 Zrb Ollama provides a task named `LLMTask`, allowing you to create a Zrb Task with a custom model or tools.
 
 ```python
-from zrb import runner, StrInput
-from zrb_ollama import LLMTask
-from zrb_ollama.tools import query_internet, create_rag
-
 import os
 
-_CURRENT_DIR = os.path.dirname(__file__)
-with open(os.path.join(_CURRENT_DIR, "john-titor.md")) as f:
-    john_titor_article = f.read()
+from zrb import CmdTask, StrInput, runner
+from zrb_ollama import LLMTask, ToolFactory
+from zrb_ollama.tools import (
+    create_rag, documents_from_directory, query_internet
+)
 
-ask = LLMTask(
-    name="ask",
+_CURRENT_DIR = os.path.dirname(__file__)
+_RAG_DIR = os.path.join(_CURRENT_DIR, "rag")
+
+rag = LLMTask(
+    name="rag",
     inputs=[
         StrInput(name="user-prompt", default="How John Titor introduce himself?"),
     ],
-    model="gpt-4o",
+    # model="gpt-4o",
     user_message="{{input.user_prompt}}",
-    tools=[
-        create_rag(
-            tool_name="retrieve",
-            tool_description="Look for anything related to John Titor"
-            documents=[john_titor_article],
-            model="text-embedding-ada-002",
-        ),
-        query_internet,
-    ]
+    tools=[query_internet],
+    tool_factories=[
+        ToolFactory(
+            create_rag,
+            tool_name="retrieve_john_titor_info",
+            tool_description="Look for anything related to John Titor",
+            documents=documents_from_directory(os.path.join(_RAG_DIR, "document")),
+            # model="text-embedding-ada-002",
+            vector_db_path=os.path.join(_RAG_DIR, "vector"),
+            # reset_db=True,
+        )
+    ],
 )
-runner.register(ask)
+runner.register(rag)
 ```
 
-Assuming there is a file named `john-titor.md`, you can invoke the Task by invoking the following command.
+Assuming there is a file named `john-titor.md` inside `rag/documents` folder, you can invoke the Task by invoking the following command.
 
 ```bash
-zrb ask
+zrb rag
 ```
 
 The LLM can browse the article or look for anything on the internet.
@@ -88,15 +113,20 @@ The LLM can browse the article or look for anything on the internet.
 Under the hood, LLMTask makes use of Agent. You can create and interact with the agent programmatically as follows.
 
 ```python
-from zrb_ollama import agent
-from zrb_ollama.tools import create_rag, query_internet
-
 import asyncio
 import os
 
+from zrb import CmdTask, StrInput, runner
+from zrb_ollama import agent
+from zrb_ollama.tools import (
+    create_rag, documents_from_directory, query_internet
+)
+
 _CURRENT_DIR = os.path.dirname(__file__)
-with open(os.path.join(_CURRENT_DIR, "john-titor.md")) as f:
-    john_titor_article = f.read()
+_RAG_DIR = os.path.join(_CURRENT_DIR, "rag")
+
+
+from zrb_ollama.tools import create_rag, query_internet
 
 
 agent = Agent(
@@ -105,8 +135,10 @@ agent = Agent(
         create_rag(
             tool_name="retrieve",
             tool_description="Look for anything related to John Titor"
-            documents=[john_titor_article],
-            model="text-embedding-ada-002",
+            documents=documents_from_directory(os.path.join(_RAG_DIR, "document")),
+            # model="text-embedding-ada-002",
+            vector_db_path=os.path.join(_RAG_DIR, "vector"),
+            # reset_db=True,
         ),
         query_internet,
     ]
@@ -115,4 +147,21 @@ result = asyncio.run(agent.add_user_message("How John Titor introduce himself?")
 print(result)
 ```
 
+# Configurations
 
+- `LLM_MODEL`
+    - default: `ollama/mistral:7b-instruct`
+- `INTERACTIVE_ENABLED_TOOL_NAMES`
+    - default: `query_internet,open_web_page,run_shell_command`
+- `RAG_EMBEDDING_MODEL`
+    - default: `ollama/nomic-embed-text`
+- `RAG_CHUNK_SIZE`
+    - default: `1024`
+- `RAG_OVERLAP`
+    - default: `128`
+- `RAG_MAX_RESULT_COUNT`
+    - default: `5`
+- `DEFAULT_SYSTEM_PROMPT`
+    - default: `You are a helpful assistant.`
+- `DEFAULT_SYSTEM_MESSAGE_TEMPLATE`
+    - default: See 
