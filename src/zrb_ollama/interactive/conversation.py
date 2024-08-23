@@ -17,7 +17,7 @@ from ..config import (
 from ..tools import (
     create_get_changes,
     create_rag,
-    documents_from_directory,
+    get_rag_documents,
 )
 
 
@@ -158,7 +158,7 @@ class Conversation:
         self._available_tools[tool_name] = create_rag(
             tool_name=tool_name,
             tool_description=tool_description,
-            documents=documents_from_directory(document_directory),
+            documents=get_rag_documents(document_directory),
             model=model,
             vector_db_path=vector_db_path,
             vector_db_collection=vector_db_collection,

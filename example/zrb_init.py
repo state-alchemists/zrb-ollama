@@ -3,17 +3,14 @@ import os
 from zrb import CmdTask, StrInput, runner
 from zrb_ollama import LLMTask, ToolFactory
 from zrb_ollama.tools import (
-    create_get_changes, create_rag, documents_from_directory, query_internet
+    create_get_changes, create_rag_from_directory, query_internet
 )
 
 _CURRENT_DIR = os.path.dirname(__file__)
-_RAG_DIR = os.path.join(_CURRENT_DIR, "rag")
-
 
 ##################################################################################
 # RAG Demo
 ##################################################################################
-
 rag = LLMTask(
     name="rag",
     inputs=[
@@ -24,13 +21,12 @@ rag = LLMTask(
     tools=[query_internet],
     tool_factories=[
         ToolFactory(
-            create_rag,
+            create_rag_from_directory,
             tool_name="retrieve_john_titor_info",
             tool_description="Look for anything related to John Titor",
-            documents=documents_from_directory(os.path.join(_RAG_DIR, "document")),
             # model="text-embedding-ada-002",
-            vector_db_path=os.path.join(_RAG_DIR, "vector"),
-            # reset_db=True,
+            document_dir_path=os.path.join(_CURRENT_DIR, "rag", "document"),
+            vector_db_path=os.path.join(_CURRENT_DIR, "rag", "vector"),
         )
     ],
 )

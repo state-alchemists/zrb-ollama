@@ -41,7 +41,7 @@ To enhance `zrb-ollama` with tools, you can create a file named `zrb_ollama_init
 ```python
 import os
 from zrb_ollama import interactive_tools
-from zrb_ollama.tools import create_rag, documents_from_directory
+from zrb_ollama.tools import create_rag, get_rag_documents
 
 
 _CURRENT_DIR = os.path.dirname(__file__)
@@ -49,7 +49,7 @@ _CURRENT_DIR = os.path.dirname(__file__)
 retrieve_john_titor_info = create_rag(
     tool_name='retrieve_john_titor_info',
     tool_description="Look for anything related to John Titor",
-    documents=documents_from_directory(os.path.join(_CURRENT_DIR, "rag", "document")),
+    documents=get_rag_documents(os.path.join(_CURRENT_DIR, "rag", "document")),
     vector_db_path=os.path.join(_CURRENT_DIR, "rag", "vector"),
     # reset_db=True,
 )
@@ -67,7 +67,7 @@ import os
 from zrb import CmdTask, StrInput, runner
 from zrb_ollama import LLMTask, ToolFactory
 from zrb_ollama.tools import (
-    create_rag, documents_from_directory, query_internet
+    create_rag, get_rag_documents, query_internet
 )
 
 _CURRENT_DIR = os.path.dirname(__file__)
@@ -86,7 +86,7 @@ rag = LLMTask(
             create_rag,
             tool_name="retrieve_john_titor_info",
             tool_description="Look for anything related to John Titor",
-            documents=documents_from_directory(os.path.join(_RAG_DIR, "document")),
+            documents=get_rag_documents(os.path.join(_RAG_DIR, "document")),
             # model="text-embedding-ada-002",
             vector_db_path=os.path.join(_RAG_DIR, "vector"),
             # reset_db=True,
@@ -115,7 +115,7 @@ import os
 from zrb import CmdTask, StrInput, runner
 from zrb_ollama import agent
 from zrb_ollama.tools import (
-    create_rag, documents_from_directory, query_internet
+    create_rag, get_rag_documents, query_internet
 )
 
 _CURRENT_DIR = os.path.dirname(__file__)
@@ -131,7 +131,7 @@ agent = Agent(
         create_rag(
             tool_name="retrieve",
             tool_description="Look for anything related to John Titor"
-            documents=documents_from_directory(os.path.join(_RAG_DIR, "document")),
+            documents=get_rag_documents(os.path.join(_RAG_DIR, "document")),
             # model="text-embedding-ada-002",
             vector_db_path=os.path.join(_RAG_DIR, "vector"),
             # reset_db=True,
