@@ -67,7 +67,7 @@ class Conversation:
         )
         result = await agent.add_user_message(user_prompt)
         print(colored(f"{result}", color="yellow"))
-        self._previous_messages = agent.get_history()
+        self._previous_messages = agent.get_previous_messages()
 
     def _read_user_message(self) -> str:
         if self._initial_user_input != "":
@@ -116,22 +116,22 @@ class Conversation:
         if line.lower() == "/tool":
             self._print_tool_names()
             return True
-        if line.lower() == "/tool all":
-            self._print_available_tool_names()
-            return True
         if line.lower().startswith("/tool add"):
-            tool_name = self._get_subcommand("/tool add", line)
-            if tool_name == "rag":
-                self._add_rag_tool()
-                return True
-            if tool_name == "git_diff":
-                self._add_git_diff_tool()
-                return True
-            self._add_tool(tool_name)
+            tool_names = self._get_subcommand("/tool add", line).split(" ")
+            for tool_name in tool_names:
+                if tool_name == "rag":
+                    self._add_rag_tool()
+                elif tool_name == "git_diff":
+                    self._add_git_diff_tool()
+                else:
+                    self._add_tool(tool_name)
+            self._print_tool_names()
             return True
         if line.lower().startswith("/tool rm"):
-            tool_name = self._get_subcommand("/tool rm", line)
-            self._remove_tool(tool_name)
+            tool_names = self._get_subcommand("/tool rm", line).split(" ")
+            for tool_name in tool_names:
+                self._remove_tool(tool_name)
+            self._print_tool_names()
             return True
         return False
 
@@ -233,7 +233,6 @@ class Conversation:
             self._print_red_indented(f"Tool is already active: {tool_name}")
             return
         self._enabled_tool_names.append(tool_name)
-        self._print_tool_names()
 
     def _remove_tool(self, tool_name):
         if tool_name not in self._available_tools:
@@ -243,19 +242,14 @@ class Conversation:
             self._print_red_indented(f"Tool is not active: {tool_name}")
             return
         self._enabled_tool_names.remove(tool_name)
-        self._print_tool_names()
 
     def _print_tool_names(self):
-        self._print_green_indented("Active Tools:")
-        for active_tool_name in self._enabled_tool_names:
-            self._print_green_indented(f"- {active_tool_name}")
-
-    def _print_available_tool_names(self):
-        self._print_green_indented("Available Tools:")
-        for available_tool_name in self._available_tools:
-            self._print_green_indented(f"- {available_tool_name}")
-        self._print_green_indented("- rag")
-        self._print_green_indented("- git_diff")
+        self._print_green_indented("Tools:")
+        for tool_name in self._available_tools:
+            status = "[x]" if tool_name in self._enabled_tool_names else "[ ]"
+            self._print_green_indented(f"- {status} {tool_name}")
+        self._print_green_indented("- rag (Create new RAG tool)")
+        self._print_green_indented("- git_diff (Create new Git Diff tool)")
 
     def _print_all_instructions(self):
         self._print_instruction("/?", "Show help")
@@ -268,7 +262,6 @@ class Conversation:
         )  # noqa
         print(file=sys.stderr)
         self._print_instruction("/tool", "Get list of tools")
-        self._print_instruction("/tool all", "Get list of available tools")
         self._print_instruction("/tool add <tool-name>", "Add tool")
         self._print_instruction("/tool rm <tool-name>", "Remove tool")
 

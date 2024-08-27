@@ -1,5 +1,8 @@
 import os
 
+INIT_SCRIPT_STR = os.getenv("ZRB_OLLAMA_INIT_SCRIPTS", "")
+INIT_SCRIPTS = INIT_SCRIPT_STR.split(":") if INIT_SCRIPT_STR != "" else []
+
 LLM_MODEL = os.getenv("ZRB_OLLAMA_LLM_MODEL", "ollama/mistral:7b-instruct")
 INTERACTIVE_ENABLED_TOOL_NAMES = [
     name.strip()
@@ -17,13 +20,14 @@ RAG_OVERLAP = int(os.getenv("ZRB_OLLAMA_RAG_OVERLAP", "128"))
 RAG_MAX_RESULT_COUNT = int(os.getenv("ZRB_OLLAMA_RAG_MAX_RESULT_COUNT", "5"))
 
 DEFAULT_SYSTEM_PROMPT = os.getenv(
-    "ZRB_OLLAMA_DEFAULT_SYSTEM_PROMPT", "You are a helpful assistant."
+    "ZRB_OLLAMA_DEFAULT_SYSTEM_PROMPT",
+    "You are a helpful assistant. You provide accurate and comprehensive answers."
 )
 
 _default_system_message_template = """
 {system_prompt}
 
-You are designed to respond in a specific JSON format. Your responses MUST ALWAYS follow this structure:
+Your responses MUST ALWAYS STRICTLY follow this JSON format structure:
 
 {response_format}
 
@@ -35,7 +39,7 @@ FUNCTION RULES:
 1. Only use functions listed in the FUNCTION SCHEMA below.
 2. Provide ALL required arguments for each function.
 3. Do not include extra or invalid arguments.
-4. Use finish_conversation ONLY when you have the final_answer or it's impossible to find one.
+4. Only use finish_conversation when you have the final_answer or it's impossible to find one.
 
 FUNCTION SCHEMA:
 
@@ -51,5 +55,5 @@ If you receive an error:
 REMINDER: ALWAYS double-check your response format and function arguments before submitting.
 """.strip()
 DEFAULT_SYSTEM_MESSAGE_TEMPLATE = os.getenv(
-    "ZRB_OLLAMA_DEFAULT_SYSTEM_MESSAGE_TEMPLALTE", _default_system_message_template
+    "ZRB_OLLAMA_DEFAULT_SYSTEM_MESSAGE_TEMPLATE", _default_system_message_template
 )

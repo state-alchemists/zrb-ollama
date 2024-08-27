@@ -1,5 +1,6 @@
 import json
 import re
+import time
 import traceback
 from collections.abc import Callable, Mapping
 from typing import Any, Optional
@@ -25,6 +26,7 @@ class Agent:
         max_iteration: int = 10,
         should_show_system_prompt: bool = False,
         should_show_history: bool = False,
+        conversation_log_path: Optional[str] = None,
         print_fn: Optional[Callable[[str], Any]] = None,
         **kwargs: Mapping[str, Any],
     ):
@@ -41,6 +43,7 @@ class Agent:
         self._kwargs = kwargs
         self._should_show_system_prompt = should_show_system_prompt
         self._should_show_history = should_show_history
+        self._conversation_log_path = conversation_log_path
         self._return = ""
         self._print = print if print_fn is None else print_fn
         self._function_schemas = {
@@ -89,61 +92,80 @@ class Agent:
         self._previous_messages = (
             previous_messages if previous_messages is not None else []
         )  # noqa
-        self._messages = [self._system_message] + self._previous_messages
         self._finished = False
 
     def get_system_message(self) -> Any:
         return self._system_message
 
-    def get_history(self) -> list[Any]:
+    def get_previous_messages(self) -> list[Any]:
         return self._previous_messages
 
-    async def add_user_message(self, user_message: Any) -> list[Any]:
-        self._append_message({"role": "user", "content": user_message})
-        if self._should_show_system_prompt:
-            self._print("📜 System prompt")
-            self._print(self.get_system_message()["content"])
-        history = self.get_history()
-        if self._should_show_history and len(history) > 0:
-            self._print("📜 History")
-            for previous_message in history:
-                self._print(previous_message)
+    def get_messages(self) -> list[Any]:
+        return [self._system_message] + self._previous_messages
+
+    async def add_user_message(self, user_message: str) -> list[Any]:
+        self._append_user_message(user_message)
+        self._print_system_prompt()
+        self._print_previous_messages()
         for _ in range(self._max_iteration):
+            start = time.time()
+            self._print("🧠 Processing...")
             response = await litellm.acompletion(
-                model=self._model, messages=self._messages, **self._kwargs
+                model=self._model, messages=self.get_messages(), **self._kwargs
             )
+            end = time.time()
+            elapsed = end - start
             response_message = response.choices[0].message
-            self._print(f"🤖 Response {response_message}")
+            self._print(f"🤖 Response ({elapsed:.2f} seconds): {response_message}")
             try:
                 response_map = self._extract_agent_message(response_message.content)
                 self._validate_agent_message(response_map)
-                self._append_message(
-                    {"role": "assistant", "content": json.dumps(response_map)}
-                )
+                self._append_agent_message(json.dumps(response_map))
             except Exception as exc:
-                self._print(f"🛑 Error {exc}")
+                self._print(f"🛑 Error: {exc}")
                 traceback.print_exc()
-                self._append_message(response_message)
+                self._append_agent_message(response_message)
                 self._append_feedback_error(exc)
                 continue
-            self._print(f"🥝 Response map {response_map}")
+            self._print(f"🥝 Response map: {response_map}")
             action = response_map.get("action", {})
             function_name = action.get("function", "")
             function_kwargs = action.get("arguments", {})
             result = None
             try:
                 self._validate_function_call(function_name, function_kwargs)
+                start = time.time()
                 result = await self._execute_function(function_name, function_kwargs)
-                self._print(f"✅ Result {result}")
+                end = time.time()
+                elapsed = end - start
+                self._print(f"✅ Result ({elapsed:.2f} seconds): {result}")
                 self._append_function_call_ok(function_name, function_kwargs, result)
             except Exception as exc:
-                self._print(f"🛑 Error {exc}")
+                self._print(f"🛑 Error: {exc}")
                 traceback.print_exc()
                 self._append_function_call_error(function_name, function_kwargs, exc)
             if self._finished:
                 return result
         self._finished = False
         return None
+
+    def _print_system_prompt(self):
+        if self._should_show_system_prompt:
+            self._print("📜 System prompt")
+            self._print(self.get_system_message()["content"])
+
+    def _print_previous_messages(self):
+        previous_messages = self.get_previous_messages()
+        if self._should_show_history and len(previous_messages) > 0:
+            self._print("📜 History")
+            for previous_message in previous_messages:
+                self._print(previous_message)
+
+    def _append_user_message(self, user_message: str):
+        self._append_message({"role": "user", "content": user_message})
+
+    def _append_agent_message(self, assistant_message: str):
+        self._append_message({"role": "user", "content": assistant_message})
 
     def _append_feedback_error(self, exc: Exception):
         self._append_message(
@@ -166,7 +188,7 @@ class Agent:
                 "role": "user",
                 "content": json.dumps(
                     {
-                        "type": "feedback_error",
+                        "type": "function_call_error",
                         "function": function,
                         "arguments": arguments,
                         "error": self._extract_exception(exc),
@@ -183,7 +205,7 @@ class Agent:
                 "role": "user",
                 "content": json.dumps(
                     {
-                        "type": "feedback_success",
+                        "type": "function_call_ok",
                         "function": function_name,
                         "arguments": arguments,
                         "result": result,
@@ -194,7 +216,6 @@ class Agent:
 
     def _append_message(self, message: Any):
         self._previous_messages.append(message)
-        self._messages.append(message)
 
     def _extract_exception(self, exc: Exception) -> Any:
         exc_str = f"{exc}"
@@ -215,7 +236,7 @@ class Agent:
                     "error": "INVALID FUNCTION",
                     "details": f"The function `{function_name}` is not a recognized",
                     "valid_functions": self._function_names,
-                    "action_required": "Choose a valid function",
+                    "required_action": "Choose a valid function",
                 }
             )
         missing_arguments = []
@@ -240,7 +261,7 @@ class Agent:
                     "error": "INVALID ARGUMENTS",
                     "details": error_details,
                     "correct_function_schema": self._function_schemas[function_name],
-                    "action_required": "Revise your response to include all required arguments and remove any invalid ones",  # noqa
+                    "required_action": "Revise your response to include all required arguments and remove any invalid ones",  # noqa
                 }
             )
 
@@ -256,7 +277,7 @@ class Agent:
                     "error": "EXECUTION FAILED",
                     "details": f"{exc}",
                     "correct_function_schema": self._function_schemas[function_name],
-                    "action_required": "Revise your arguments",
+                    "required_action": "Revise your arguments",
                 }
             )
 
@@ -297,8 +318,8 @@ class Agent:
                 {
                     "error": "MALFORMED PAYLOAD",
                     "error_message": "Your response does not match the required JSON format",  # noqa
-                    "required_format": self._response_format,
-                    "action_required": "Reformat your entire response to match the required_format",  # noqa
+                    "expected_format": self._response_format,
+                    "required_action": "Reformat your entire response to match the expected_format",  # noqa
                 }
             )
 
@@ -335,7 +356,7 @@ class Agent:
                     "error": "MALFORMED PAYLOAD",
                     "error_message": "The response payload is missing required information or contains invalid data",  # noqa
                     "details": error_details,
-                    "required_format": self._response_format,
-                    "action_required": "Reformat your entire response to match the required_format",  # noqa
+                    "expected_format": self._response_format,
+                    "required_action": "Reformat your entire response to match the expected_format",  # noqa
                 }
             )
