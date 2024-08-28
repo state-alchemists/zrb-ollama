@@ -3,7 +3,6 @@ import os
 from collections.abc import Callable, Iterable
 
 import litellm
-import pdfplumber
 from zrb.helper.accessories.color import colored
 from zrb.helper.callable import run_async
 
@@ -129,6 +128,8 @@ def _get_text_reader(file_path: str):
 
 
 def _get_pdf_reader(file_path):
+    import pdfplumber
+
     def read():
         _print_dark(f"Start reading {file_path}")
         contents = []

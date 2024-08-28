@@ -5,6 +5,7 @@ from zrb_ollama.tools import create_rag_from_directory
 
 _CURRENT_DIR = os.path.dirname(__file__)
 
+
 retrieve_john_titor_info = create_rag_from_directory(
     tool_name='retrieve_john_titor_info',
     tool_description="Look for anything related to John Titor",

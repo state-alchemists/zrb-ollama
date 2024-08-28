@@ -2,16 +2,21 @@ import asyncio
 import os
 import sys
 
-from .interactive import interactive_tools, load_module, Conversation
-from .config import INIT_SCRIPTS
+from zrb.helper.loader.load_module import load_module
+from zrb.helper.loader.load_script import load_script
+
+from .interactive import interactive_tools, Conversation
+from .config import INIT_SCRIPTS, INIT_MODULES
 
 
 def prompt():
+    for init_module in INIT_MODULES:
+        load_module(init_module)
     for init_script in INIT_SCRIPTS:
-        load_module(init_script)
+        load_script(init_script)
     default_init_script = os.path.abspath("./zrb_ollama_init.py")
     if os.path.exists(default_init_script):
-        load_module(default_init_script)
+        load_script(default_init_script)
     initial_user_input = "" if len(sys.argv) <= 1 else " ".join(sys.argv[1:])
     conversation = Conversation(
         enabled_tool_names=interactive_tools.get_enabled_tool_names(),

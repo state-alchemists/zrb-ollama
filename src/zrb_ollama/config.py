@@ -1,7 +1,16 @@
 import os
 
+INIT_MODULE_STR = os.getenv("ZRB_OLLAMA_INIT_MODULES", "")
+INIT_MODULES = [
+    init_module.strip()
+    for init_module in INIT_MODULE_STR.split(":") if init_module.strip() != ""
+] if INIT_MODULE_STR != "" else []
+
 INIT_SCRIPT_STR = os.getenv("ZRB_OLLAMA_INIT_SCRIPTS", "")
-INIT_SCRIPTS = INIT_SCRIPT_STR.split(":") if INIT_SCRIPT_STR != "" else []
+INIT_SCRIPTS = [
+    init_script.strip()
+    for init_script in INIT_SCRIPT_STR.split(":") if init_script.strip() != ""
+] if INIT_SCRIPT_STR != "" else []
 
 LLM_MODEL = os.getenv("ZRB_OLLAMA_LLM_MODEL", "ollama/mistral:7b-instruct")
 INTERACTIVE_ENABLED_TOOL_NAMES = [
