@@ -124,7 +124,7 @@ class Agent:
             except Exception as exc:
                 self._print(f"🛑 Error: {exc}")
                 traceback.print_exc()
-                self._append_agent_message(response_message)
+                self._append_agent_message(response_message.content)
                 self._append_feedback_error(exc)
                 continue
             self._print(f"🥝 Response map: {response_map}")
@@ -165,7 +165,7 @@ class Agent:
         self._append_message({"role": "user", "content": user_message})
 
     def _append_agent_message(self, assistant_message: str):
-        self._append_message({"role": "user", "content": assistant_message})
+        self._append_message({"role": "assistant", "content": assistant_message})
 
     def _append_feedback_error(self, exc: Exception):
         self._append_message(

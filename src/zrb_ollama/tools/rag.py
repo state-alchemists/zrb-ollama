@@ -62,7 +62,7 @@ def create_rag(
         client = chromadb.PersistentClient(
             path=vector_db_path, settings=Settings(allow_reset=True)
         )
-        if not is_db_exist or reset_db:
+        if (not is_db_exist) or reset_db:
             client.reset()
             collection = client.get_or_create_collection(vector_db_collection)
             chunk_index = 0
