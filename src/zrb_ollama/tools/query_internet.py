@@ -11,7 +11,7 @@ def query_internet(
     query: Annotated[str, "Search query"],
     num_results: Annotated[int, "Search result count, by default 10"] = 10,
 ) -> str:
-    """Search factual information from the internet."""
+    """Search factual information from the internet by using Google."""
     response = requests.get(
         "https://google.com/search",
         headers={

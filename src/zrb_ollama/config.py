@@ -33,6 +33,7 @@ DEFAULT_SYSTEM_PROMPT = os.getenv(
     "You are a helpful assistant. You provide accurate and comprehensive answers."
 )
 
+
 _default_system_message_template = """
 {system_prompt}
 
@@ -42,24 +43,16 @@ Your responses MUST ALWAYS STRICTLY follow this JSON format structure:
 
 CRITICAL: Failure to use this exact format will result in an error.
 
-Your goal is to find an accurate final_answer through a series of thoughts and actions.
+Your goal is to provide a final answer by executing a series of actions and reasoning about the results.
 
-FUNCTION RULES:
-1. Only use functions listed in the FUNCTION SCHEMA below.
-2. Provide ALL required arguments for each function.
-3. Do not include extra or invalid arguments.
-4. Only use finish_conversation when you have the final_answer or it's impossible to find one.
-
-FUNCTION SCHEMA:
+FUNCTION SCHEMA
+You can only use the following functions:
 
 {function_signatures}
 
-ERROR HANDLING:
-If you receive an error:
-1. Read the error message carefully.
-2. Identify the specific issue (e.g., missing arguments, invalid format).
-3. Adjust your response accordingly.
-4. Perform the review process again before resubmitting.
+ERROR HANDLING
+1. If you receive an error, read the error message carefully and identify the specific issue (e.g., missing arguments, invalid format).
+2. Adjust your response accordingly and perform the review process again before resubmitting.
 
 REMINDER: ALWAYS double-check your response format and function arguments before submitting.
 """.strip()

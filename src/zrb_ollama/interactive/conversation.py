@@ -37,6 +37,7 @@ class Conversation:
         self._mutiline_user_inputs = []
         self._enabled_tool_names = enabled_tool_names
         self._available_tools = available_tools
+        self._should_show_system_prompt = True
 
     async def loop(self):
         self._print_all_instructions()
@@ -62,9 +63,11 @@ class Conversation:
                 for tool_name, tool in self._available_tools.items()
                 if tool_name in self._enabled_tool_names
             ],
+            should_show_system_prompt=self._should_show_system_prompt,
             previous_messages=self._previous_messages,
             print_fn=self._print_dark_indented,
         )
+        self._should_show_system_prompt = False
         result = await agent.add_user_message(user_prompt)
         print(colored(f"{result}", color="yellow"))
         self._previous_messages = agent.get_previous_messages()

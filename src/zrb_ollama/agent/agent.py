@@ -3,7 +3,7 @@ import re
 import time
 import traceback
 from collections.abc import Callable, Mapping
-from typing import Any, Optional
+from typing import Annotated, Any, Optional
 
 import litellm
 from zrb.helper.callable import run_async
@@ -30,10 +30,10 @@ class Agent:
         print_fn: Optional[Callable[[str], Any]] = None,
         **kwargs: Mapping[str, Any],
     ):
-        def finish_conversation(final_answer: str) -> str:
-            """
-            Ends up conversation with user with final answer
-            """
+        def finish_conversation(
+            final_answer: Annotated[str, "Final answer containing all necessary information and citations"]  # noqa
+        ) -> str:
+            """Ends up conversation with user by providing the final_answer. The final_answer should contains all detailed information and citations."""  # noqa
             self._finished = True
             return final_answer
 
