@@ -33,12 +33,11 @@ def create_rag_from_directory(
         vector_db_path=vector_db_path,
         vector_db_collection=vector_db_collection,
         reset_db=get_rag_reset_db(
-            document_dir_path=document_dir_path,
-            vector_db_path=vector_db_path
+            document_dir_path=document_dir_path, vector_db_path=vector_db_path
         ),
         chunk_size=chunk_size,
         overlap=overlap,
-        max_result_count=max_result_count
+        max_result_count=max_result_count,
     )
 
 
@@ -84,7 +83,7 @@ def create_rag(
                         collection.upsert(
                             ids=[f"id{chunk_index}"],
                             embeddings=[vector],
-                            documents=[chunk]
+                            documents=[chunk],
                         )
                         chunk_index += 1
         collection = client.get_or_create_collection(vector_db_collection)
@@ -124,6 +123,7 @@ def _get_text_reader(file_path: str):
             content = f.read()
         _print_dark(f"Complete reading {file_path}")
         return content
+
     return read
 
 
@@ -138,6 +138,7 @@ def _get_pdf_reader(file_path):
                 contents.append(page.extract_text())
         _print_dark(f"Complete reading {file_path}")
         return "\n".join(contents)
+
     return read
 
 

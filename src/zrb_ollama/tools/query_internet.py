@@ -20,6 +20,8 @@ def query_internet(
         params={
             "q": query,
             "num": num_results,
+            "hl": "en",
+            "safe": "off",
         },
     )
     if response.status_code != 200:

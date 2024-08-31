@@ -3,8 +3,8 @@ from collections.abc import Callable, Mapping
 from typing import Any, Union
 
 from zrb.helper.accessories.color import colored
-from zrb.helper.util import to_snake_case
 from zrb.helper.typecheck import typechecked
+from zrb.helper.util import to_snake_case
 
 from ..agent import Agent
 from ..config import (
@@ -14,11 +14,7 @@ from ..config import (
     RAG_MAX_RESULT_COUNT,
     RAG_OVERLAP,
 )
-from ..tools import (
-    create_get_changes,
-    create_rag,
-    get_rag_documents,
-)
+from ..tools import create_get_changes, create_rag, get_rag_documents
 
 
 @typechecked
@@ -116,6 +112,10 @@ class Conversation:
         return False
 
     def _process_tool_command(self, line: str) -> bool:
+        if line.lower() == "/clear":
+            self._previous_messages = []
+            self._print_dark_indented("Context cleared")
+            return True
         if line.lower() == "/tool":
             self._print_tool_names()
             return True
@@ -257,6 +257,7 @@ class Conversation:
     def _print_all_instructions(self):
         self._print_instruction("/?", "Show help")
         self._print_instruction("/bye", "Quit")
+        self._print_instruction("/clear", "Clear context")
         self._print_instruction("/multi", "Start multiline mode")
         self._print_instruction("/end", "Stop multiline mode")
         self._print_instruction(

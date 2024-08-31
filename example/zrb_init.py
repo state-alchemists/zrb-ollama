@@ -3,7 +3,9 @@ import os
 from zrb import CmdTask, StrInput, runner
 from zrb_ollama import LLMTask, ToolFactory
 from zrb_ollama.tools import (
-    create_get_changes, create_rag_from_directory, query_internet
+    create_get_changes,
+    create_rag_from_directory,
+    query_internet,
 )
 
 _CURRENT_DIR = os.path.dirname(__file__)

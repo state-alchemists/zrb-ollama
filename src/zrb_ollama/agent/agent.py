@@ -5,11 +5,17 @@ import traceback
 from collections.abc import Callable, Mapping
 from typing import Annotated, Any, Optional
 
+import json_repair
 import litellm
 from zrb.helper.callable import run_async
 from zrb.helper.typecheck import typechecked
 
-from ..config import DEFAULT_SYSTEM_PROMPT, DEFAULT_SYSTEM_MESSAGE_TEMPLATE
+from ..config import (
+    DEFAULT_JSON_FIXER_SYSTEM_MESSAGE_TEMPLATE,
+    DEFAULT_JSON_FIXER_SYSTEM_PROMPT,
+    DEFAULT_SYSTEM_MESSAGE_TEMPLATE,
+    DEFAULT_SYSTEM_PROMPT,
+)
 from ._helper import extract_metadata, get_metadata_description, get_metadata_signature
 
 
@@ -19,9 +25,11 @@ class Agent:
     def __init__(
         self,
         model: str,
-        system_message_template: str = DEFAULT_SYSTEM_MESSAGE_TEMPLATE,
-        system_prompt: str = DEFAULT_SYSTEM_PROMPT,
-        previous_messages: Optional[list[Any]] = None,
+        system_message_template: Optional[str] = None,
+        system_prompt: Optional[str] = None,
+        json_fixer_system_message_template: Optional[str] = None,
+        json_fixer_system_prompt: Optional[str] = None,
+        previous_messages: list[Any] = [],
         tools: list[Callable] = [],
         max_iteration: int = 10,
         should_show_system_prompt: bool = False,
@@ -31,12 +39,21 @@ class Agent:
         **kwargs: Mapping[str, Any],
     ):
         def finish_conversation(
-            final_answer: Annotated[str, "Final answer containing all necessary information and citations"]  # noqa
+            final_answer: Annotated[
+                str, "Final answer containing all necessary information and citations"
+            ]  # noqa
         ) -> str:
             """Ends up conversation with user by providing the final_answer. The final_answer should contains all detailed information and citations."""  # noqa
             self._finished = True
             return final_answer
-
+        if system_message_template is None:
+            system_message_template = DEFAULT_SYSTEM_MESSAGE_TEMPLATE
+        if system_prompt is None:
+            system_prompt = DEFAULT_SYSTEM_PROMPT
+        if json_fixer_system_message_template is None:
+            json_fixer_system_message_template = DEFAULT_JSON_FIXER_SYSTEM_MESSAGE_TEMPLATE  # noqa
+        if json_fixer_system_prompt is None:
+            json_fixer_system_prompt = DEFAULT_JSON_FIXER_SYSTEM_PROMPT
         self._model = model
         self._tools = [finish_conversation] + tools
         self._max_iteration = max_iteration
@@ -53,46 +70,47 @@ class Agent:
             fn_name: get_metadata_signature(metadata)
             for fn_name, metadata in self._function_schemas.items()
         }
+        formatted_function_description = {
+            fn_name: "   \n".join(get_metadata_description(metadata).split("\n"))
+            for fn_name, metadata in self._function_schemas.items()
+        }
+        self._function_md_signature_str = "\n".join(
+            [
+                f"- {signature}\n  {formatted_function_description[fn_name]}"
+                for fn_name, signature in self._function_signatures.items()
+            ]
+        )
         self._function_names = [key for key in self._function_schemas]
         self._function_map = {fn.__name__: fn for fn in self._tools}
         function_names_str = ", ".join([f"`{key}`" for key in self._function_names])
         self._response_format = {
             "thought": "<your plan and reasoning to choose an action>",
-            "action": {
-                "function": f"<function name, SHOULD STRICTLY be one of these: {function_names_str}>",  # noqa
-                "arguments": {
-                    "<argument-1>": "<value-1>",
-                    "<argument-2>": "<value-2>",
-                },
+            "function": f"<function name, SHOULD STRICTLY be one of these: {function_names_str}>",  # noqa
+            "arguments": {
+                "<argument-1>": "<value-1>",
+                "<argument-2>": "<value-2>",
             },
         }
-        self._system_message = {
+        self._system_message = self._build_system_message(
+            system_message_template, system_prompt
+        )
+        self._json_fixer_system_message = self._build_system_message(
+            json_fixer_system_message_template, json_fixer_system_prompt
+        )
+        self._previous_messages = previous_messages
+        self._finished = False
+
+    def _build_system_message(self, template: str, prompt: str) -> Mapping[str, Any]:
+        return {
             "role": "system",
-            "content": system_message_template.format(
-                system_prompt=system_prompt,
-                response_format=json.dumps(self._response_format, indent=2),
+            "content": template.format(
+                system_prompt=prompt,
+                response_format=json.dumps(self._response_format),
                 function_names=", ".join(self._function_names),
-                function_signatures="\n".join(
-                    [
-                        "\n".join(
-                            [
-                                f"- {signature}",
-                                "  "
-                                + get_metadata_description(
-                                    self._function_schemas[fn_name]
-                                ),
-                            ]
-                        ).strip()
-                        for fn_name, signature in self._function_signatures.items()
-                    ]
-                ),
+                function_signatures=self._function_md_signature_str,
                 function_schemas=json.dumps(self._function_schemas, indent=2),
             ),
         }
-        self._previous_messages = (
-            previous_messages if previous_messages is not None else []
-        )  # noqa
-        self._finished = False
 
     def get_system_message(self) -> Any:
         return self._system_message
@@ -101,7 +119,24 @@ class Agent:
         return self._previous_messages
 
     def get_messages(self) -> list[Any]:
-        return [self._system_message] + self._previous_messages
+        return [
+            self._system_message,
+            {"role": "user", "content": "Hi"},
+            {
+                "role": "assistant",
+                "content": json.dumps(
+                    {
+                        "thought": "User has greet me, I should say hi.",
+                        "action": {
+                            "function": "finish_conversation",
+                            "arguments": {
+                                "final_answer": "Hi, I'm a useful assistant, I'm ready to help."  # noqa
+                            },
+                        },
+                    }
+                ),
+            },
+        ] + self._previous_messages
 
     async def add_user_message(self, user_message: str) -> list[Any]:
         self._append_user_message(user_message)
@@ -115,22 +150,26 @@ class Agent:
             )
             end = time.time()
             elapsed = end - start
-            response_message = response.choices[0].message
-            self._print(f"🤖 Response ({elapsed:.2f} seconds): {response_message}")
+            response_content = response.choices[0].message.content
+            self._print(f"🤖 LLM Response ({elapsed:.2f} seconds): {response_content}")
+            response_map = None
             try:
-                response_map = self._extract_agent_message(response_message.content)
-                self._validate_agent_message(response_map)
+                response_map = await self._extract_agent_message_with_llm(
+                    user_message, response_content
+                )
                 self._append_agent_message(json.dumps(response_map))
             except Exception as exc:
                 self._print(f"🛑 Error: {exc}")
                 traceback.print_exc()
-                self._append_agent_message(response_message.content)
-                self._append_feedback_error(exc)
+                if response_map is not None:
+                    self._append_agent_message(response_map)
+                else:
+                    self._append_agent_message(response_content)
+                self._append_format_error(user_message, exc)
                 continue
-            self._print(f"🥝 Response map: {response_map}")
-            action = response_map.get("action", {})
-            function_name = action.get("function", "")
-            function_kwargs = action.get("arguments", {})
+            self._print(f"🥝 Extracted Response: {response_map}")
+            function_name = response_map.get("function", "")
+            function_kwargs = response_map.get("arguments", {})
             result = None
             try:
                 self._validate_function_call(function_name, function_kwargs)
@@ -138,12 +177,19 @@ class Agent:
                 result = await self._execute_function(function_name, function_kwargs)
                 end = time.time()
                 elapsed = end - start
-                self._print(f"✅ Result ({elapsed:.2f} seconds): {result}")
-                self._append_function_call_ok(function_name, function_kwargs, result)
+                if self._finished:
+                    self._print(f"✅ Final Result ({elapsed:.2f} seconds)")
+                else:
+                    self._print(f"✅ Result ({elapsed:.2f} seconds): {result}")
+                self._append_function_call_ok(
+                    user_message, function_name, function_kwargs, result
+                )
             except Exception as exc:
                 self._print(f"🛑 Error: {exc}")
                 traceback.print_exc()
-                self._append_function_call_error(function_name, function_kwargs, exc)
+                self._append_function_call_error(
+                    user_message, function_name, function_kwargs, exc
+                )
             if self._finished:
                 return result
         self._finished = False
@@ -167,21 +213,23 @@ class Agent:
     def _append_agent_message(self, assistant_message: str):
         self._append_message({"role": "assistant", "content": assistant_message})
 
-    def _append_feedback_error(self, exc: Exception):
+    def _append_format_error(self, user_message: str, exc: Exception):
         self._append_message(
             {
                 "role": "user",
                 "content": json.dumps(
                     {
-                        "type": "feedback_error",
+                        "type": "format_error",
+                        "details": "Assistant response is unparseable.",
                         "error": self._extract_exception(exc),
+                        "original_user_message": user_message,
                     }
                 ),
             }
         )
 
     def _append_function_call_error(
-        self, function: str, arguments: list[str], exc: Exception
+        self, user_message: str, function: str, arguments: list[str], exc: Exception
     ):
         self._append_message(
             {
@@ -189,16 +237,18 @@ class Agent:
                 "content": json.dumps(
                     {
                         "type": "function_call_error",
+                        "details": "Assistant function call is incorrect.",
                         "function": function,
                         "arguments": arguments,
                         "error": self._extract_exception(exc),
+                        "original_user_message": user_message,
                     }
                 ),
             }
         )
 
     def _append_function_call_ok(
-        self, function_name: str, arguments: list[str], result: Any
+        self, user_message: str, function_name: str, arguments: list[str], result: Any
     ):
         self._append_message(
             {
@@ -209,6 +259,7 @@ class Agent:
                         "function": function_name,
                         "arguments": arguments,
                         "result": result,
+                        "original_user_message": user_message,
                     }
                 ),
             }
@@ -281,47 +332,100 @@ class Agent:
                 }
             )
 
+    async def _extract_agent_message_with_llm(
+        self, user_message, response_content
+    ) -> Mapping[str, Any]:
+        try:
+            response_map = self._extract_agent_message(response_content)
+            return response_map
+        except Exception:
+            start = time.time()
+            self._print("🛑 Trying to create a valid JSON by using LLM...")
+            response = await litellm.acompletion(
+                model=self._model,
+                messages=[
+                    self._json_fixer_system_message,
+                    {
+                        "role": "user",
+                        "content": "\n".join(
+                            [
+                                "Original query from human:",
+                                user_message,
+                                "Fix the following LLM message:",
+                                response_content,
+                            ]
+                        ),
+                    },
+                ],
+            )
+            end = time.time()
+            elapsed = end - start
+            revised_content = response.choices[0].message.content
+            self._print(f"Revised content ({elapsed:.2f}): {revised_content}")
+            return self._extract_agent_message(revised_content)
+
     def _extract_agent_message(self, response_content) -> Mapping[str, Any]:
         try:
-            return json.loads(response_content)
+            response_map = self._json_loads(response_content)
+            self._validate_agent_message(response_map)
+            return response_map
         except Exception:
+            self._print("🛑 Trying to determine JSON by using code delimiters...")
             json_pattern = re.compile(r"```(json)?\n({.*?})\n```", re.DOTALL)
             # Search for the pattern in the content
             match = json_pattern.search(response_content)
             if match:
                 json_str = match.group(2)
                 # Parse the JSON string to ensure it is valid
-                return json.loads(json_str)
-            # The dumbest way
-            brace_stack = []
-            json_start = -1
-            json_end = -1
-            for i, char in enumerate(response_content):
-                if char == "{":
-                    if not brace_stack:
-                        json_start = i
-                    brace_stack.append("{")
-                elif char == "}":
-                    if brace_stack:
-                        brace_stack.pop()
-                        if not brace_stack:
-                            json_end = i + 1
-                            break
+                try:
+                    response_map = self._json_loads(json_str)
+                    self._validate_agent_message(response_map)
+                    return response_map
+                except Exception as e:
+                    self._print(f"🛑 Failed: {e}")
+            else:
+                self._print("🛑 Failed: Not found")
+            # The seemingly working way
+            self._print("🛑 Trying to determine JSON by using matching braces...")
+            json_start, json_end = self._get_json_start_and_end(response_content)
             if json_start != -1 and json_end != -1:
                 json_str = response_content[json_start:json_end]
                 # Parse the JSON string to ensure it is valid
                 try:
-                    return json.loads(json_str)
-                except Exception:
-                    pass
+                    response_map = self._json_loads(json_str)
+                    self._validate_agent_message(response_map)
+                    return response_map
+                except Exception as e:
+                    self._print(f"🛑 Failed: {e}")
+            else:
+                self._print("🛑 Failed: Not found")
             raise self._map_to_exception(
                 {
-                    "error": "MALFORMED PAYLOAD",
-                    "error_message": "Your response does not match the required JSON format",  # noqa
+                    "error": "MALFORMED RESPONSE",
+                    "error_message": "Your response is not a valid JSON",
                     "expected_format": self._response_format,
                     "required_action": "Reformat your entire response to match the expected_format",  # noqa
                 }
             )
+
+    def _get_json_start_and_end(self, response_content: str) -> tuple[int, int]:
+        brace_stack = []
+        json_start, json_end = -1, -1
+        for i, char in enumerate(response_content):
+            if char == "{":
+                if not brace_stack:
+                    json_start = i
+                brace_stack.append("{")
+            elif char == "}":
+                if brace_stack:
+                    brace_stack.pop()
+                    if not brace_stack:
+                        json_end = i + 1
+                        break
+        return json_start, json_end
+
+    def _json_loads(self, json_str: str) -> Any:
+        return json_repair.loads(json_str)
 
     def _validate_agent_message(self, json_message: Mapping[str, Any]):
         error_details = []
@@ -329,27 +433,16 @@ class Agent:
             error_details.append("The `thought` field is missing")
         if "thought" in json_message and not isinstance(json_message["thought"], str):
             error_details.append("The `thought` field is not a string")
-        if "action" not in json_message:
-            error_details.append("The `action` field is missing")
-        if "action" in json_message and not isinstance(json_message["action"], dict):
-            error_details.append("The `action` field is not an object")
-        if "action" in json_message and isinstance(json_message["action"], dict):
-            if "function" not in json_message["action"]:
-                error_details.append(
-                    "The `function` field is missing from the `action` object"
-                )  # noqa
-            if "function" in json_message["action"] and not isinstance(
-                json_message["action"]["function"], str
-            ):  # noqa
-                error_details.append("The action's `function` field is not a string")
-            if "arguments" not in json_message["action"]:
-                error_details.append(
-                    "The `arguments` field is missing from the `action` object"
-                )  # noqa
-            if "arguments" in json_message["action"] and not isinstance(
-                json_message["action"]["arguments"], dict
-            ):  # noqa
-                error_details.append("The action's `arguments` field is not an object")
+        if "function" not in json_message:
+            error_details.append("The `function` field is missing")
+        if "function" in json_message and not isinstance(json_message["function"], str):
+            error_details.append("The `function` field is not a string")
+        if "arguments" not in json_message:
+            error_details.append("The `arguments` field is missing")
+        if "arguments" in json_message and not isinstance(
+            json_message["arguments"], dict
+        ):
+            error_details.append("The `arguments` field is not an object")
         if len(error_details) > 0:
             raise self._map_to_exception(
                 {

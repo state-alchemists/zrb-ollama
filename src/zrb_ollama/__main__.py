@@ -5,8 +5,8 @@ import sys
 from zrb.helper.loader.load_module import load_module
 from zrb.helper.loader.load_script import load_script
 
-from .interactive import interactive_tools, Conversation
-from .config import INIT_SCRIPTS, INIT_MODULES
+from .config import INIT_MODULES, INIT_SCRIPTS
+from .interactive import Conversation, interactive_tools
 
 
 def prompt():
@@ -21,6 +21,6 @@ def prompt():
     conversation = Conversation(
         enabled_tool_names=interactive_tools.get_enabled_tool_names(),
         available_tools=interactive_tools.get_available_tools(),
-        initial_user_input=initial_user_input
+        initial_user_input=initial_user_input,
     )
     asyncio.run(conversation.loop())

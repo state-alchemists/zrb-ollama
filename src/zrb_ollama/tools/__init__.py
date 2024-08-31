@@ -5,7 +5,10 @@ from .git import create_get_changes
 from .open_web_page import open_web_page
 from .query_internet import query_internet
 from .rag import (
-    create_rag, create_rag_from_directory, get_rag_documents, get_rag_reset_db
+    create_rag,
+    create_rag_from_directory,
+    get_rag_documents,
+    get_rag_reset_db,
 )
 from .run_shell_command import run_shell_command
 

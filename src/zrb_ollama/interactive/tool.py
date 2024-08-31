@@ -1,4 +1,5 @@
 from collections.abc import Callable, Mapping
+
 from ..config import INTERACTIVE_ENABLED_TOOL_NAMES
 from ..tools import (
     get_current_location,
@@ -9,7 +10,7 @@ from ..tools import (
 )
 
 
-class _InteractiveTools():
+class _InteractiveTools:
 
     def __init__(self, enabled_tool_names: list[str]):
         self._enabled_tool_names = list(enabled_tool_names)

@@ -55,6 +55,8 @@ class LLMTask(Task):
         model: Optional[str] = "ollama/mistral:7b-instruct",
         system_message_template: Optional[str] = None,
         system_prompt: Optional[Any] = None,
+        json_fixer_system_message_template: Optional[str] = None,
+        json_fixer_system_prompt: Optional[Any] = None,
         previous_messages: Optional[list[Any]] = None,
         tools: Iterable[Callable] = [query_internet, run_shell_command],
         tool_factories: Iterable[ToolFactory] = [],
@@ -103,6 +105,8 @@ class LLMTask(Task):
         self._model = model
         self._system_message_template = system_message_template
         self._system_prompt = system_prompt
+        self._json_fixer_system_message_template = json_fixer_system_message_template
+        self._json_fixer_system_prompt = json_fixer_system_prompt
         self._previous_messages = previous_messages
         self._tools = tools
         for factory in tool_factories:
@@ -117,6 +121,10 @@ class LLMTask(Task):
             model=self.render_str(self._model),
             system_message_template=self.render_str(self._system_message_template),
             system_prompt=self.render_str(self._system_prompt),
+            json_fixer_system_message_template=self.render_str(
+                self._json_fixer_system_message_template
+            ),
+            json_fixer_system_prompt=self.render_str(self._json_fixer_system_prompt),
             previous_messages=self._previous_messages,
             tools=self._tools
             + [factory.get_tool() for factory in self._tool_factories],
