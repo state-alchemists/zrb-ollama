@@ -30,6 +30,9 @@ INTERACTIVE_ENABLED_TOOL_NAMES = [
         "query_internet,open_web_page,run_shell_command",
     ).split(",")
 ]
+CONVERSATION_LOG_PATH = os.getenv(
+    "ZRB_OLLAMA_CONVERSATION_LOG_PATH", "~/.zrb-ollama/history"
+)
 
 RAG_EMBEDDING_MODEL = os.getenv(
     "ZRB_OLLAMA_RAG_EMBEDDING_MODEL", "ollama/nomic-embed-text"

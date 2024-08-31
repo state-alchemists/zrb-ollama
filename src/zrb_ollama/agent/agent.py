@@ -1,8 +1,10 @@
 import json
+import os
 import re
 import time
 import traceback
 from collections.abc import Callable, Mapping
+from datetime import date
 from typing import Annotated, Any, Optional
 
 import json_repair
@@ -209,9 +211,11 @@ class Agent:
 
     def _append_user_message(self, user_message: str):
         self._append_message({"role": "user", "content": user_message})
+        self._write_conversation_log(f"User: {user_message}")
 
     def _append_agent_message(self, assistant_message: str):
         self._append_message({"role": "assistant", "content": assistant_message})
+        self._write_conversation_log(f"Assistant: {assistant_message}")
 
     def _append_format_error(self, user_message: str, exc: Exception):
         self._append_message(
@@ -227,6 +231,7 @@ class Agent:
                 ),
             }
         )
+        self._write_conversation_log("[ERROR] Invalid message")
 
     def _append_function_call_error(
         self, user_message: str, function: str, arguments: list[str], exc: Exception
@@ -246,6 +251,7 @@ class Agent:
                 ),
             }
         )
+        self._write_conversation_log("[ERROR] Function call error")
 
     def _append_function_call_ok(
         self, user_message: str, function_name: str, arguments: list[str], result: Any
@@ -264,9 +270,22 @@ class Agent:
                 ),
             }
         )
+        self._write_conversation_log(f"[SUCCESS] {result}")
 
     def _append_message(self, message: Any):
         self._previous_messages.append(message)
+
+    def _write_conversation_log(self, message: str):
+        if self._conversation_log_path is None:
+            return
+        conversation_log_path = os.path.expanduser(self._conversation_log_path)
+        if not os.path.isdir(conversation_log_path):
+            os.makedirs(conversation_log_path)
+        current_date = date.today()
+        formatted_date = current_date.strftime('%Y-%m-%d')
+        file_name = os.path.join(conversation_log_path, f"{formatted_date}.txt")
+        with open(file_name, "a") as file:
+            file.write(f"{message}\n")
 
     def _extract_exception(self, exc: Exception) -> Any:
         exc_str = f"{exc}"

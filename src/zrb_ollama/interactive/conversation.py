@@ -8,6 +8,7 @@ from zrb.helper.util import to_snake_case
 
 from ..agent import Agent
 from ..config import (
+    CONVERSATION_LOG_PATH,
     LLM_MODEL,
     RAG_CHUNK_SIZE,
     RAG_EMBEDDING_MODEL,
@@ -59,6 +60,7 @@ class Conversation:
                 for tool_name, tool in self._available_tools.items()
                 if tool_name in self._enabled_tool_names
             ],
+            conversation_log_path=CONVERSATION_LOG_PATH,
             should_show_system_prompt=self._should_show_system_prompt,
             previous_messages=self._previous_messages,
             print_fn=self._print_dark_indented,
