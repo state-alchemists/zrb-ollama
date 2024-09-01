@@ -1,3 +1,4 @@
+import os
 import sys
 from collections.abc import Callable, Mapping
 from typing import Any, Union
@@ -9,13 +10,23 @@ from zrb.helper.util import to_snake_case
 from ..agent import Agent
 from ..config import (
     CONVERSATION_LOG_PATH,
+    CONVERSATION_VECTOR_LOG_PATH,
     LLM_MODEL,
     RAG_CHUNK_SIZE,
     RAG_EMBEDDING_MODEL,
     RAG_MAX_RESULT_COUNT,
     RAG_OVERLAP,
 )
-from ..tools import create_get_changes, create_rag, get_rag_documents
+from ..tools import create_get_changes, create_rag_from_directory
+
+if not os.path.isdir(CONVERSATION_LOG_PATH):
+    os.makedirs(CONVERSATION_LOG_PATH)
+conversation_rag = create_rag_from_directory(
+    tool_name="search_previous_conversation",
+    tool_description="Look for any information that probably was in previous conversation between assistant and human",  # noqa
+    document_dir_path=CONVERSATION_LOG_PATH,
+    vector_db_path=CONVERSATION_VECTOR_LOG_PATH,
+)
 
 
 @typechecked
@@ -34,6 +45,7 @@ class Conversation:
         self._mutiline_user_inputs = []
         self._enabled_tool_names = enabled_tool_names
         self._available_tools = available_tools
+        self._available_tools[conversation_rag.__name__] = conversation_rag
         self._should_show_system_prompt = True
 
     async def loop(self):
@@ -160,10 +172,10 @@ class Conversation:
             self._read_param("RAG Max Result Count", RAG_MAX_RESULT_COUNT)
         )
         self._enabled_tool_names.append(tool_name)
-        self._available_tools[tool_name] = create_rag(
+        self._available_tools[tool_name] = create_rag_from_directory(
             tool_name=tool_name,
             tool_description=tool_description,
-            documents=get_rag_documents(document_directory),
+            document_dir_path=document_directory,
             model=model,
             vector_db_path=vector_db_path,
             vector_db_collection=vector_db_collection,

@@ -13,6 +13,9 @@ from ..config import (
     RAG_OVERLAP,
 )
 
+Document = str | Callable[[], str]
+Documents = Callable[[], Iterable[Document]] | Iterable[Document]
+
 
 def create_rag_from_directory(
     tool_name: str,
@@ -28,12 +31,13 @@ def create_rag_from_directory(
     return create_rag(
         tool_name=tool_name,
         tool_description=tool_description,
-        documents=get_rag_documents(document_dir_path),
+        documents=get_rag_documents(os.path.expanduser(document_dir_path)),
         model=model,
         vector_db_path=vector_db_path,
         vector_db_collection=vector_db_collection,
         reset_db=get_rag_reset_db(
-            document_dir_path=document_dir_path, vector_db_path=vector_db_path
+            document_dir_path=os.path.expanduser(document_dir_path),
+            vector_db_path=os.path.expanduser(vector_db_path)
         ),
         chunk_size=chunk_size,
         overlap=overlap,
@@ -44,29 +48,30 @@ def create_rag_from_directory(
 def create_rag(
     tool_name: str,
     tool_description: str,
-    documents: Iterable[str | Callable[[], str]] = [],
+    documents: Documents = [],
     model: str = RAG_EMBEDDING_MODEL,
     vector_db_path: str = "./chroma",
     vector_db_collection: str = "documents",
-    reset_db: bool = False,
+    reset_db: Callable[[], bool] | bool = False,
     chunk_size: int = RAG_CHUNK_SIZE,
     overlap: int = RAG_OVERLAP,
     max_result_count: int = RAG_MAX_RESULT_COUNT,
 ) -> Callable[[str], str]:
-    import chromadb
-    from chromadb.config import Settings
-
     async def retrieve(query: str) -> str:
+        import chromadb
+        from chromadb.config import Settings
         is_db_exist = os.path.isdir(vector_db_path)
         client = chromadb.PersistentClient(
             path=vector_db_path, settings=Settings(allow_reset=True)
         )
-        if (not is_db_exist) or reset_db:
+        should_reset_db = await run_async(reset_db) if callable(reset_db) else reset_db
+        if (not is_db_exist) or should_reset_db:
             client.reset()
             collection = client.get_or_create_collection(vector_db_collection)
             chunk_index = 0
             _print_dark("Scanning documents")
-            for document in documents:
+            docs = await run_async(documents) if callable(documents) else documents
+            for document in docs:
                 if callable(document):
                     try:
                         document = await run_async(document)
@@ -103,17 +108,19 @@ def create_rag(
     return retrieve
 
 
-def get_rag_documents(document_dir_path: str) -> list[Callable[[], str]]:
-    # Walk through the directory
-    readers = []
-    for root, _, files in os.walk(document_dir_path):
-        for file in files:
-            file_path = os.path.join(root, file)
-            if file_path.lower().endswith(".pdf"):
-                readers.append(_get_pdf_reader(file_path))
-                continue
-            readers.append(_get_text_reader(file_path))
-    return readers
+def get_rag_documents(document_dir_path: str) -> Callable[[], list[Callable[[], str]]]:
+    def get_documents() -> list[Callable[[], str]]:
+        # Walk through the directory
+        readers = []
+        for root, _, files in os.walk(document_dir_path):
+            for file in files:
+                file_path = os.path.join(root, file)
+                if file_path.lower().endswith(".pdf"):
+                    readers.append(_get_pdf_reader(file_path))
+                    continue
+                readers.append(_get_text_reader(file_path))
+        return readers
+    return get_documents
 
 
 def _get_text_reader(file_path: str):
@@ -123,14 +130,12 @@ def _get_text_reader(file_path: str):
             content = f.read()
         _print_dark(f"Complete reading {file_path}")
         return content
-
     return read
 
 
 def _get_pdf_reader(file_path):
-    import pdfplumber
-
     def read():
+        import pdfplumber
         _print_dark(f"Start reading {file_path}")
         contents = []
         with pdfplumber.open(file_path) as pdf:
@@ -138,20 +143,23 @@ def _get_pdf_reader(file_path):
                 contents.append(page.extract_text())
         _print_dark(f"Complete reading {file_path}")
         return "\n".join(contents)
-
     return read
 
 
-def get_rag_reset_db(document_dir_path: str, vector_db_path: str = "./chroma") -> bool:
-    document_exist = os.path.isdir(document_dir_path)
-    if not document_exist:
-        raise ValueError(f"Document directory not exists: {document_dir_path}")
-    vector_db_exist = os.path.isdir(vector_db_path)
-    if not vector_db_exist:
-        return True
-    document_mtime = _get_most_recent_mtime(document_dir_path)
-    vector_db_mtime = _get_most_recent_mtime(vector_db_path)
-    return document_mtime > vector_db_mtime
+def get_rag_reset_db(
+    document_dir_path: str, vector_db_path: str = "./chroma"
+) -> Callable[[], bool]:
+    def should_reset_db() -> bool:
+        document_exist = os.path.isdir(document_dir_path)
+        if not document_exist:
+            raise ValueError(f"Document directory not exists: {document_dir_path}")
+        vector_db_exist = os.path.isdir(vector_db_path)
+        if not vector_db_exist:
+            return True
+        document_mtime = _get_most_recent_mtime(document_dir_path)
+        vector_db_mtime = _get_most_recent_mtime(vector_db_path)
+        return document_mtime > vector_db_mtime
+    return should_reset_db
 
 
 def _get_most_recent_mtime(directory):

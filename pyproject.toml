@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "zrb-ollama"
-version = "0.2.12"
+version = "0.2.13"
 description = "Zrb LLM plugin"
 authors = ["Go Frendi <gofrendiasgard@gmail.com>"]
 license = "AGPL-3.0-or-later"
@@ -23,9 +23,9 @@ pdfplumber = {version = "^0.11.3", optional = true}
 json-repair = "^0.28.4"
 
 [tool.poetry.extras]
-# poetry install -E aws -E chromadb
+# poetry install -E aws -E rag
 aws = ["boto3"]
-chromadb = ["chromadb", "pdfplumber"]
+rag = ["chromadb", "pdfplumber"]
 
 
 [tool.poetry.dev-dependencies]
