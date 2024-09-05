@@ -17,6 +17,8 @@ from ..config import (
     DEFAULT_JSON_FIXER_SYSTEM_PROMPT,
     DEFAULT_SYSTEM_MESSAGE_TEMPLATE,
     DEFAULT_SYSTEM_PROMPT,
+    LLM_MODEL,
+    SHOULD_SHOW_SYSTEM_PROMPT
 )
 from ._helper import extract_metadata, get_metadata_description, get_metadata_signature
 
@@ -26,15 +28,15 @@ class Agent:
 
     def __init__(
         self,
-        model: str,
+        model: Optional[str] = None,
         system_message_template: Optional[str] = None,
         system_prompt: Optional[str] = None,
         json_fixer_system_message_template: Optional[str] = None,
         json_fixer_system_prompt: Optional[str] = None,
-        previous_messages: list[Any] = [],
+        previous_messages: Optional[list[Any]] = [],
         tools: list[Callable] = [],
         max_iteration: int = 10,
-        should_show_system_prompt: bool = False,
+        should_show_system_prompt: bool = SHOULD_SHOW_SYSTEM_PROMPT,
         should_show_history: bool = False,
         conversation_log_path: Optional[str] = None,
         print_fn: Optional[Callable[[str], Any]] = None,
@@ -48,6 +50,8 @@ class Agent:
             """Ends up conversation with user by providing the final_answer. The final_answer should contains all detailed information and citations."""  # noqa
             self._finished = True
             return final_answer
+        if model is None:
+            model = LLM_MODEL
         if system_message_template is None:
             system_message_template = DEFAULT_SYSTEM_MESSAGE_TEMPLATE
         if system_prompt is None:
@@ -56,6 +60,8 @@ class Agent:
             json_fixer_system_message_template = DEFAULT_JSON_FIXER_SYSTEM_MESSAGE_TEMPLATE  # noqa
         if json_fixer_system_prompt is None:
             json_fixer_system_prompt = DEFAULT_JSON_FIXER_SYSTEM_PROMPT
+        if previous_messages is None:
+            previous_messages = []
         self._model = model
         self._tools = [finish_conversation] + tools
         self._max_iteration = max_iteration
@@ -129,11 +135,9 @@ class Agent:
                 "content": json.dumps(
                     {
                         "thought": "User has greet me, I should say hi.",
-                        "action": {
-                            "function": "finish_conversation",
-                            "arguments": {
-                                "final_answer": "Hi, I'm a useful assistant, I'm ready to help."  # noqa
-                            },
+                        "function": "finish_conversation",
+                        "arguments": {
+                            "final_answer": "Hi, I'm a useful assistant, I'm ready to help."  # noqa
                         },
                     }
                 ),

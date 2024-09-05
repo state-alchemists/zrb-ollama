@@ -1,4 +1,5 @@
 import os
+from zrb.helper.string.conversion import to_boolean
 
 INIT_MODULE_STR = os.getenv("ZRB_OLLAMA_INIT_MODULES", "")
 INIT_MODULES = (
@@ -11,6 +12,9 @@ INIT_MODULES = (
     else []
 )
 
+SHOULD_SHOW_SYSTEM_PROMPT = to_boolean(os.getenv(
+    "ZRB_OLLAMA_SHOULD_SHOW_SYSTEM_PROMPT", "0"
+))
 INIT_SCRIPT_STR = os.getenv("ZRB_OLLAMA_INIT_SCRIPTS", "")
 INIT_SCRIPTS = (
     [
@@ -59,7 +63,7 @@ You MUST ONLY respond in the following JSON format:
 
 CRITICAL:
 - Failure to use this exact format will result in an error.
-- Never try to simulate the tool.
+- Never try to simulate the tool output.
 
 Your goal is to provide a final answer by executing a series of actions and reasoning about the results.
 

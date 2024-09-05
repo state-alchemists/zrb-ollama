@@ -52,7 +52,7 @@ class LLMTask(Task):
         color: Optional[str] = None,
         retry: int = 2,
         retry_interval: float | int = 1,
-        model: Optional[str] = "ollama/mistral:7b-instruct",
+        model: Optional[str] = None,
         system_message_template: Optional[str] = None,
         system_prompt: Optional[Any] = None,
         json_fixer_system_message_template: Optional[str] = None,

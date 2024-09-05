@@ -16,6 +16,7 @@ from ..config import (
     RAG_EMBEDDING_MODEL,
     RAG_MAX_RESULT_COUNT,
     RAG_OVERLAP,
+    SHOULD_SHOW_SYSTEM_PROMPT
 )
 from ..tools import create_get_changes, create_rag_from_directory
 
@@ -34,11 +35,13 @@ class Conversation:
     def __init__(
         self,
         model: str = LLM_MODEL,
+        should_show_system_prompt: bool = SHOULD_SHOW_SYSTEM_PROMPT,
         enabled_tool_names: list[str] = [],
         available_tools: Mapping[str, Callable[[], Any]] = {},
         initial_user_input: str = "",
     ):
         self._model = model
+        self._should_show_system_prompt = should_show_system_prompt
         self._initial_user_input = initial_user_input
         self._previous_messages = []
         self._is_multiline_mode = False
@@ -46,7 +49,6 @@ class Conversation:
         self._enabled_tool_names = enabled_tool_names
         self._available_tools = available_tools
         self._available_tools[conversation_rag.__name__] = conversation_rag
-        self._should_show_system_prompt = True
 
     async def loop(self):
         self._print_all_instructions()
