@@ -20,15 +20,6 @@ from ..config import (
 )
 from ..tools import create_get_changes, create_rag_from_directory
 
-if not os.path.isdir(CONVERSATION_LOG_PATH):
-    os.makedirs(CONVERSATION_LOG_PATH)
-conversation_rag = create_rag_from_directory(
-    tool_name="search_previous_conversation",
-    tool_description="Look for any information that probably was in previous conversation between assistant and human",  # noqa
-    document_dir_path=CONVERSATION_LOG_PATH,
-    vector_db_path=CONVERSATION_VECTOR_LOG_PATH,
-)
-
 
 @typechecked
 class Conversation:
@@ -48,6 +39,17 @@ class Conversation:
         self._mutiline_user_inputs = []
         self._enabled_tool_names = enabled_tool_names
         self._available_tools = available_tools
+        # Add conversation RAG
+        conversation_log_path = os.path.expanduser(CONVERSATION_LOG_PATH)
+        conversation_vector_log_path = os.path.expanduser(CONVERSATION_VECTOR_LOG_PATH)
+        if not os.path.isdir(conversation_log_path):
+            os.makedirs(conversation_log_path)
+        conversation_rag = create_rag_from_directory(
+            tool_name="search_previous_conversation",
+            tool_description="Look for any information that probably was in previous conversation between assistant and human",  # noqa
+            document_dir_path=conversation_log_path,
+            vector_db_path=conversation_vector_log_path,
+        )
         self._available_tools[conversation_rag.__name__] = conversation_rag
 
     async def loop(self):
