@@ -13,7 +13,7 @@ exclude = ["example"]
 
 [tool.poetry.dependencies]
 python = ">=3.10.0,<4.0.0"
-zrb = ">=0.25.0"
+zrb = ">=0.27.0"
 beautifulsoup4 = "~=4.12.3"
 litellm = "~=1.44.8"
 requests = "~2.31.0"
